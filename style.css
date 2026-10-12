@@ -129,21 +129,20 @@ u { text-decoration: underline; text-underline-offset: 3px; text-decoration-colo
 #code-editor.with-tabs { border-radius: 0 0 12px 12px; }
 #output-console { flex: 1; background: #000; color: #10b981; font-family: 'Fira Code', monospace; font-size: 14px; padding: 16px; border-radius: 12px; overflow-y: auto; white-space: pre-wrap; margin: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); }
 
-/* बॉटम शीट (Including Error Message Styling) */
+/* बॉटम शीट (और Error Message Style) */
 #backdrop { position: fixed; inset: 0; z-index: 19; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); }
 #sheet { position: fixed; left: 50%; bottom: 0; z-index: 20; display: flex; flex-direction: column; width: 100%; max-width: 640px; height: 50vh; background: var(--card); border-radius: var(--sheet-radius) var(--sheet-radius) 0 0; transform: translate(-50%, 100%); visibility: hidden; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -4px 20px rgba(0,0,0,0.1);}
 #sheet.open { transform: translate(-50%, 0); visibility: visible; }
 #sheet.short { height: auto; max-height: 50vh; padding-bottom: 24px; } 
 
 .sheet-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--line); }
-.sheet-head h3 { margin: 0; font-size: 18px; font-weight: 700; transition: color 0.2s; }
+.sheet-head h3 { margin: 0; font-size: 18px; font-weight: 700; }
 #sheet-close { width: 36px; height: 36px; border: none; border-radius: 50%; background: var(--bg); color: var(--ink); font-size: 14px; cursor: pointer; transition: background 0.2s;}
 #sheet-close:hover { background: #e2e8f0; }
 #sheet-body { flex: 1; overflow-y: auto; padding: 16px 24px calc(10px + env(safe-area-inset-bottom, 0px)); }
 
-/* एरर मैसेज बॉक्स की स्टाइलिंग (पॉपअप के अंदर) */
-.err-msg { color: #ef4444; font-size: 14.5px; font-family: 'Fira Code', monospace; background: #fef2f2; padding: 16px; border-radius: 12px; border: 1px solid #fca5a5; white-space: pre-wrap; line-height: 1.6; margin: 0; overflow-x: auto; }
-@media (prefers-color-scheme: dark) { .err-msg { background: #450a0a; border-color: #7f1d1d; color: #fca5a5; } }
+/* Error Message Inside Bottom Sheet */
+.err-msg { color: #ef4444; font-size: 14.5px; margin: 0; line-height: 1.6; font-family: 'Fira Code', monospace; background: var(--bg); padding: 16px; border-radius: 10px; border: 1px solid var(--line); white-space: pre-wrap; word-break: break-word; }
 
 .lang-opts { display: flex; flex-direction: column; gap: 10px; }
 .lang-opt { padding: 16px 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 16px; font-weight: 600; text-align: left; cursor: pointer; transition: all 0.2s;}
