@@ -1,0 +1,30 @@
+{
+  "summary": "Python is an easy language to start programming with.",
+  "questions": [
+    {
+      "q": "How do you print text on the screen in Python?",
+      "answer": "Use the built-in print() function and put the text inside quotes. Python runs the line and shows the text in the output.",
+      "code": "print(\"Hello, World!\")",
+      "algorithm": [
+        "Start",
+        "Write the text inside quotes",
+        "Pass the text to print()",
+        "The text appears on the screen",
+        "Stop"
+      ]
+    },
+    {
+      "q": "Write a program to add two numbers entered by the user.",
+      "answer": "input() always returns text, so convert both values to numbers with int() before adding them.",
+      "code": "a = int(input(\"Enter first number: \"))\nb = int(input(\"Enter second number: \"))\ntotal = a + b\nprint(\"Sum =\", total)",
+      "algorithm": [
+        "Start",
+        "Read the first number as a",
+        "Read the second number as b",
+        "Calculate total = a + b",
+        "Display total",
+        "Stop"
+      ]
+    }
+  ]
+}

@@ -1,1 +1,15 @@
-
+{
+  "title": {
+    "en": "Python Basics",
+    "hi": "पायथन की बुनियादी बातें"
+  },
+  "class": "8",
+  "programming": true,
+  "language": "Python",
+  "execution": "interpreter",
+  "tags": [
+    "python",
+    "print",
+    "input"
+  ]
+}
