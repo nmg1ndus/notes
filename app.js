@@ -26,7 +26,7 @@ function el(tag, props = {}, ...kids) {
 function icon(...paths) {
   const s = document.createElementNS(NS, 'svg');
   [['viewBox', '0 0 24 24'], ['width', '20'], ['height', '20'], ['fill', 'none'], ['stroke', 'currentColor'],
-   ['stroke-width', '2.5'], ['stroke-linecap', 'round'], ['stroke-linejoin', 'round'], ['aria-hidden', 'true']]
+   ['stroke-width', '2.2'], ['stroke-linecap', 'round'], ['stroke-linejoin', 'round'], ['aria-hidden', 'true']]
     .forEach(([k, v]) => s.setAttribute(k, v));
   paths.forEach(d => { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); s.append(p); });
   return s;
@@ -43,6 +43,42 @@ let tt;
 function toast(msg) {
   toastEl.textContent = msg; toastEl.classList.add('show');
   clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove('show'), 1600);
+}
+
+/* ---------- Text Formatter (Markdown) ---------- */
+function formatText(str) {
+  if (typeof str !== 'string') return str;
+  // Bold, Italic, and Inline Code (both `backticks` and 'single quotes')
+  let html = str
+    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+    .replace(/\*([^*]+)\*/g, '<i>$1</i>')
+    .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+    .replace(/(^|[\s(])'([^'\n]+)'(?=[\s.,!?)\]]|$)/g, '$1<code class="inline-code">$2</code>');
+    
+  // Table Parsing: Line by Line
+  if (html.includes('|')) {
+    const lines = html.split('\n');
+    let result = [], inTable = false, tableHtml = '';
+    for (let line of lines) {
+      if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
+        if (!inTable) { inTable = true; tableHtml = '<div class="table-wrap"><table>'; }
+        const cells = line.split('|').map(c => c.trim()).filter((c, i, a) => i > 0 && i < a.length - 1);
+        tableHtml += '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+      } else {
+        if (inTable) { inTable = false; result.push(tableHtml + '</table></div>'); tableHtml = ''; }
+        result.push(line);
+      }
+    }
+    if (inTable) result.push(tableHtml + '</table></div>');
+    html = result.join('\n');
+  }
+  return html;
+}
+
+function richText(tag, props, text) {
+  const node = el(tag, props);
+  node.innerHTML = formatText(text);
+  return node;
 }
 
 /* ---------- Syntax Highlighting ---------- */
@@ -62,7 +98,7 @@ const LANGS = {
   c: mk(CPRE, CSTR, 'int float double char long short void unsigned signed struct typedef enum const static return if else for while do switch case break continue sizeof NULL', 'printf scanf main malloc free strlen'),
   cpp: mk(CPRE, CSTR, 'int float double char long short void bool unsigned struct class public private using namespace new delete const static return if else for while do switch case break continue true false', 'cout cin endl std string vector main')
 };
-const ALIAS = { py: 'python', js: 'javascript', 'c++': 'cpp' };
+const ALIAS = { py: 'python', js: 'javascript', 'c++': 'cpp', html: 'html' };
 const HTMLRE = /(<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)|(<\/?[A-Za-z][\w:-]*|\/?>)|("[^"]*"|'[^']*')|([A-Za-z_:][\w:.-]*)(?=\s*=)|([\s\S])/gi;
 
 function highlight(code, name) {
@@ -92,20 +128,46 @@ function highlight(code, name) {
   return out;
 }
 
-/* ---------- Bottom Sheet ---------- */
+/* ---------- Bottom Sheets (Algo & Lang) ---------- */
 let lastFocus = null;
+
+function setLang(newLang) {
+  lang = newLang;
+  try { localStorage.setItem('lang', lang); } catch (e) {}
+  closeSheet();
+  route();
+}
+
+function openLangSheet() {
+  lastFocus = document.querySelector('.lang-btn');
+  sheet.classList.add('short');
+  document.getElementById('sheet-title').textContent = 'Select Language';
+  sheetBody.replaceChildren(
+    el('div', { className: 'lang-opts' },
+      el('button', { className: 'lang-opt' + (lang === 'en' ? ' active' : ''), onclick: () => setLang('en') }, 'English'),
+      el('button', { className: 'lang-opt' + (lang === 'hi' ? ' active' : ''), onclick: () => setLang('hi') }, 'Hindi')
+    )
+  );
+  backdrop.hidden = false;
+  sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+}
+
 function openSheet(steps, trigger) {
   lastFocus = trigger;
+  sheet.classList.remove('short'); // एल्गोरिथ्म के लिए फुल हाइट
+  document.getElementById('sheet-title').textContent = 'Algorithm';
   const list = Array.isArray(steps) ? steps : steps ? [steps] : [];
   sheetBody.replaceChildren(list.length
-    ? el('ol', {}, list.map(s => el('li', {}, s)))
+    ? el('ol', {}, list.map(s => richText('li', {}, s)))
     : el('p', { className: 'muted' }, 'No algorithm added for this question yet.'));
   sheetBody.scrollTop = 0;
   backdrop.hidden = false;
   sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
-  closeBtn.focus();
+  if (trigger) trigger.focus();
 }
+
 function closeSheet() {
   if (!sheet.classList.contains('open')) return;
   sheet.classList.remove('open'); sheet.setAttribute('aria-hidden', 'true');
@@ -138,49 +200,52 @@ function codeBox(language, code, question, algorithm) {
   algo.addEventListener('click', () => openSheet(algorithm, algo));
   
   return el('div', { className: 'code' },
-    el('div', { className: 'code-bar' }, el('span', { className: 'code-lang' }, language || 'Code'), el('div', { className: 'acts' }, share, copy, algo)),
+    // यहाँ कोड लैंग्वेज का नाम स्मॉल लेटर (toLowerCase) में सेट किया गया है
+    el('div', { className: 'code-bar' }, el('span', { className: 'code-lang' }, (language || 'Code').toLowerCase()), el('div', { className: 'acts' }, share, copy, algo)),
     el('pre', {}, el('code', {}, highlight(code, language))));
 }
 
 /* ---------- Header Logic ---------- */
 function updateHeader(isIndex, s = null) {
   const headerTop = document.querySelector('.top');
-  let left = document.getElementById('header-left');
   
-  if (!left) {
-    left = el('div', { id: 'header-left' });
-    headerTop.insertBefore(left, headerTop.firstChild);
-    const oldBrand = headerTop.querySelector('.brand');
-    if (oldBrand && oldBrand.parentElement === headerTop) oldBrand.remove();
-  }
+  let left = document.getElementById('header-left');
+  if (!left) { left = el('div', { id: 'header-left' }); headerTop.prepend(left); }
+  
+  let right = document.getElementById('header-right');
+  if (!right) { right = el('div', { id: 'header-right' }); headerTop.append(right); }
+  
+  // पुरानी फालतू चीज़ें साफ़ करें (अगर index.html में रह गई हों)
+  const oldLang = headerTop.querySelector('.lang');
+  if (oldLang) oldLang.remove();
+  const oldBrand = headerTop.querySelector('.brand:not(#header-left .brand)');
+  if (oldBrand) oldBrand.remove();
 
   if (isIndex) {
     left.replaceChildren(el('a', { href: '#/', className: 'brand' }, 'Vyut Notes'));
   } else {
-    // बैक बटन (Arrow Icon)
     const backBtn = el('a', { href: '#/', className: 'back-btn', 'aria-label': 'Go back' }, icon('M15 18l-6-6 6-6'));
-    
     if (s && s.programming) {
-      // स्लाइडर (Notes / Compiler)
       const exName = (s.execution && EXEC[s.execution]) ? EXEC[s.execution][0] : 'Compiler';
       const btnNotes = el('button', { className: 'active' }, 'Notes');
       const btnCode = el('button', {}, exName);
-      
       btnNotes.onclick = () => { btnNotes.classList.add('active'); btnCode.classList.remove('active'); };
       btnCode.onclick = () => { btnCode.classList.add('active'); btnNotes.classList.remove('active'); };
-      
-      const slider = el('div', { className: 'header-slider' }, btnNotes, btnCode);
-      left.replaceChildren(backBtn, slider);
+      left.replaceChildren(backBtn, el('div', { className: 'header-slider' }, btnNotes, btnCode));
     } else {
       left.replaceChildren(backBtn, el('span', { className: 'brand' }, 'Vyut Notes'));
     }
   }
+
+  // लैंग्वेज बटन
+  const globeIcon = icon('M22 12A10 10 0 112 12a10 10 0 0120 0z', 'M2 12h20', 'M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z');
+  const langBtn = el('button', { className: 'lang-btn', onclick: openLangSheet, 'aria-label': 'Change Language' }, globeIcon, el('span', {}, 'A/अ'));
+  right.replaceChildren(langBtn);
 }
 
 /* ---------- Pages ---------- */
 const title = s => (s.title && (s.title[lang] || s.title.en || s.title.hi)) || s.id;
 
-// अब सिर्फ क्लास का बैज दिखेगा
 function badges(s) {
   const b = el('div', { className: 'badges' });
   if (s.class) b.append(el('span', { className: 'badge' }, `Class ${s.class}`));
@@ -261,31 +326,41 @@ async function chapter(id) {
   document.title = `${title(s)} | Computer Notes`;
   updateHeader(false, s);
   
-  const out = [el('h1', {}, title(s)), badges(s)];
-  
-  // प्रोग्रामिंग और इंटरप्रेटर की एक्स्ट्रा जानकारी वाला डिब्बा हटा दिया गया है
+  // टाइटल और क्लास बैज को एक ही लाइन में रखने के लिए
+  const headerContainer = el('div', { className: 'chapter-header' }, 
+    el('h1', {}, title(s)), 
+    badges(s)
+  );
+  const out = [headerContainer];
   
   try {
     const d = await getJSON(`${id}/${lang === 'hi' ? 'hindi' : 'english'}.json`);
-    if (d.summary) out.push(el('p', { className: 'summary' }, d.summary));
+    
+    if (d.summary) {
+      out.push(richText('p', { className: 'summary' }, d.summary));
+      out.push(el('hr', { className: 'thin-line' })); // समरी के नीचे लाइन
+    }
+    
     (d.sections || []).forEach(sec => {
-      const box = el('section', { className: 'sec' }, el('h2', {}, sec.heading || ''));
-      if (sec.text) box.append(el('p', {}, sec.text));
-      if (sec.points && sec.points.length) box.append(el('ul', {}, sec.points.map(p => el('li', {}, p))));
-      if (sec.tip) box.append(el('p', { className: 'tip' }, sec.tip));
+      const box = el('section', { className: 'sec' });
+      if (sec.heading) box.append(richText('h2', {}, sec.heading));
+      if (sec.text) box.append(richText('p', {}, sec.text));
+      if (sec.points && sec.points.length) box.append(el('ul', {}, sec.points.map(p => richText('li', {}, p))));
+      if (sec.tip) box.append(richText('p', { className: 'tip' }, sec.tip));
       out.push(box);
     });
+    
     (d.questions || []).forEach((q, n) => {
-      const box = el('article', { className: 'qa' }, el('h2', {}, `${n + 1}. ${q.q}`));
-      [].concat(q.answer || []).forEach(p => box.append(el('p', {}, p)));
+      const box = el('article', { className: 'qa' });
+      if (n > 0) box.append(el('hr', { className: 'thin-line' })); // हर क्वेश्चन से पहले लाइन (पहले वाले को छोड़कर)
+      box.append(richText('h2', {}, `${n + 1}. ${q.q}`));
+      [].concat(q.answer || []).forEach(p => box.append(richText('p', {}, p)));
       if (s.programming && q.code) box.append(codeBox(q.language || s.language, q.code, q.q, q.algorithm));
       out.push(box);
     });
   } catch (e) { out.push(el('p', { className: 'muted' }, 'Notes are not available in this language yet.')); }
   
   const next = skills[i + 1];
-  
-  // सिर्फ Next बटन दिखाने के लिए नेविगेशन
   if (next) {
     const nav = el('nav', { className: 'nav' }, link(`#/${next.id}`, 'Next \u2192'));
     out.push(nav);
@@ -297,17 +372,10 @@ async function chapter(id) {
 
 async function route() {
   closeSheet();
-  document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === lang));
   const id = decodeURIComponent(location.hash.replace(/^#\/?/, '').replace(/\/$/, ''));
   try { await (!id || id === 'index.html' ? home() : chapter(id)); }
   catch (e) { app.replaceChildren(el('p', { className: 'muted' }, 'Could not load notes. Check your connection and try again.')); }
 }
-
-document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => {
-  lang = b.dataset.lang;
-  try { localStorage.setItem('lang', lang); } catch (e) {}
-  route();
-}));
 
 window.addEventListener('hashchange', () => {
   route().then(() => window.scrollTo(0, 0));
