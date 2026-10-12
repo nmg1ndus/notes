@@ -9,5 +9,6 @@
   },
   "class": "8",
   "programming": true,
-  "language": "Python"
+  "language": "Python",
+  "execution": "interpreter"
 }
