@@ -17,11 +17,11 @@ const EXEC = {
   interpreter: ['Interpreter', 'An interpreter reads and runs the program one line at a time.']
 };
 
-// Global App States
-let currentAppState = 'NOTES'; // 'NOTES', 'EDITOR', 'OUTPUT'
+let currentAppState = 'NOTES'; 
 let currentSkill = null;
 let playgroundFiles = { html: '', css: '', js: '' };
 let currentFileExt = '';
+let pendingInputResolve = null; // For python input popup
 
 function el(tag, props = {}, ...kids) {
   const n = document.createElement(tag);
@@ -52,7 +52,6 @@ function toast(msg) {
   clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove('show'), 1600);
 }
 
-// Script Loader for Python Engine
 function loadScript(src) {
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
@@ -63,7 +62,7 @@ function loadScript(src) {
   });
 }
 
-/* ---------- Text Formatter (Markdown) ---------- */
+/* ---------- Text Formatter ---------- */
 function formatText(str) {
   if (typeof str !== 'string') return str;
   let html = str
@@ -76,7 +75,6 @@ function formatText(str) {
   if (html.includes('|')) {
     const lines = html.split('\n');
     let result = [], inTable = false, tableHtml = '';
-    
     for (let i = 0; i < lines.length; i++) {
       let line = lines[i].trim();
       if (line.startsWith('|') && line.endsWith('|')) {
@@ -127,6 +125,10 @@ function highlight(code, name) {
   const flush = () => { if (buf) { out.append(buf); buf = ''; } };
   const push = (cls, text) => { if (!cls) { buf += text; return; } flush(); out.append(el('span', { className: 't-' + cls }, text)); };
   const run = (re, pick) => { re.lastIndex = 0; let m; while ((m = re.exec(code))) pick(m, re.lastIndex); flush(); };
+  
+  // HTML tags bug fix during live typing
+  const safeCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
   if (key === 'html') {
     run(HTMLRE, m => push(m[1] ? 'com' : m[2] ? 'tag' : m[3] ? 'str' : m[4] ? 'attr' : '', m[0]));
   } else if (LANGS[key]) {
@@ -140,7 +142,7 @@ function highlight(code, name) {
   return out;
 }
 
-/* ---------- App States (Notes vs Editor vs Output) ---------- */
+/* ---------- App States ---------- */
 function switchAppState(newState) {
   currentAppState = newState;
   updateHeader(false, currentSkill);
@@ -148,7 +150,6 @@ function switchAppState(newState) {
   const notesView = document.getElementById('notes-view');
   const editorView = document.getElementById('editor-view');
   const outputView = document.getElementById('output-view');
-  
   if (!notesView) return; 
 
   if (newState === 'NOTES') {
@@ -159,6 +160,9 @@ function switchAppState(newState) {
       notesView.style.display = 'none';
       editorView.style.display = 'flex';
       outputView.style.display = 'none';
+      // Adjust editor height & lines logic
+      const editorArea = document.getElementById('code-editor');
+      if(editorArea) editorArea.dispatchEvent(new Event('input'));
   } else if (newState === 'OUTPUT') {
       notesView.style.display = 'none';
       editorView.style.display = 'none';
@@ -166,7 +170,34 @@ function switchAppState(newState) {
   }
 }
 
-/* ---------- Code Execution (Local & API Fallback) ---------- */
+/* ---------- Editor Utilities ---------- */
+function syncEditorLogic() {
+  const code = document.getElementById('code-editor').value;
+  
+  // 1. Line Numbers
+  const lineNumbers = document.getElementById('line-numbers');
+  const linesCount = code.split('\n').length;
+  lineNumbers.innerHTML = Array(linesCount).fill(0).map((_, i) => i + 1).join('<br>');
+  
+  // 2. Syntax Highlighting in background
+  const highlighter = document.getElementById('code-highlighter');
+  const langStr = currentFileExt || (currentSkill.language || '').toLowerCase();
+  
+  // Emptying and appending DOM fragment
+  highlighter.replaceChildren(highlight(code, langStr));
+}
+
+function syncEditorScroll() {
+  const editor = document.getElementById('code-editor');
+  const highlighter = document.getElementById('code-highlighter');
+  const lineNumbers = document.getElementById('line-numbers');
+  
+  highlighter.scrollTop = editor.scrollTop;
+  highlighter.scrollLeft = editor.scrollLeft;
+  lineNumbers.scrollTop = editor.scrollTop;
+}
+
+/* ---------- Code Execution ---------- */
 async function runCodeAction() {
   const editorArea = document.getElementById('code-editor');
   const langStr = (currentSkill.language || 'python').toLowerCase();
@@ -178,10 +209,9 @@ async function runCodeAction() {
   
   switchAppState('OUTPUT');
   const consoleEl = document.getElementById('output-console');
-  consoleEl.textContent = 'Running code...\n';
+  consoleEl.textContent = 'Running code...\n\n';
   
   try {
-      // 1. LOCAL HTML/CSS/JS EXECUTION
       if (langStr === 'html') {
           consoleEl.innerHTML = '';
           const frame = el('iframe', { style: 'width:100%; height:100%; border:none; background:#fff; border-radius:8px;' });
@@ -189,14 +219,8 @@ async function runCodeAction() {
           
           const combined = `
           <!DOCTYPE html>
-          <html>
-          <head>
-            <style>${playgroundFiles.css || ''}</style>
-          </head>
-          <body>
-            ${playgroundFiles.html || ''}
-            <script>${playgroundFiles.js || ''}<\/script>
-          </body>
+          <html><head><style>${playgroundFiles.css || ''}</style></head>
+          <body>${playgroundFiles.html || ''}<script>${playgroundFiles.js || ''}<\/script></body>
           </html>`;
           
           frame.contentWindow.document.open();
@@ -205,70 +229,64 @@ async function runCodeAction() {
           return;
       }
       
-      // 2. LOCAL JAVASCRIPT EXECUTION
       if (langStr === 'javascript' || langStr === 'js') {
           consoleEl.textContent = '';
           const originalLog = console.log;
-          console.log = (...args) => {
-              consoleEl.textContent += args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ') + '\n';
-          };
-          try {
-              new Function(code)();
-              if(consoleEl.textContent === '') consoleEl.textContent = '[Program finished with no output]';
-          } catch(e) { showError(e.toString()); }
-          finally { console.log = originalLog; }
+          console.log = (...args) => { consoleEl.textContent += args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ') + '\n'; };
+          try { new Function(code)(); if(consoleEl.textContent === '') consoleEl.textContent = '[Program finished]'; } 
+          catch(e) { showError(e.toString()); } finally { console.log = originalLog; }
           return;
       }
       
-      // 3. LOCAL PYTHON EXECUTION (Using Skulpt)
       if (langStr === 'python') {
-          consoleEl.textContent = 'Loading Python engine...\n';
+          consoleEl.textContent = '';
           if (typeof Sk === 'undefined') {
               await loadScript('https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js');
               await loadScript('https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js');
           }
-          consoleEl.textContent = '';
           
           Sk.configure({
               output: function(text) { consoleEl.textContent += text; },
               read: function(x) {
-                  if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
-                      throw "File not found: '" + x + "'";
+                  if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined) throw "File not found: '" + x + "'";
                   return Sk.builtinFiles["files"][x];
+              },
+              inputfun: function(promptText) {
+                  return new Promise((resolve) => {
+                      // Print prompt directly to console in the same line
+                      consoleEl.textContent += promptText;
+                      // Open Custom Bottom Sheet Input
+                      openInputSheet(promptText, resolve);
+                  }).then((val) => {
+                      // Once user enters value, append it to console and move to next line
+                      consoleEl.textContent += val + "\n";
+                      return val;
+                  });
               }
           });
           
           try {
-              await Sk.misceval.asyncToPromise(function() {
-                  return Sk.importMainWithBody("<stdin>", false, code, true);
-              });
-              if(consoleEl.textContent === '') consoleEl.textContent = '[Program finished with no output]';
-          } catch(e) {
-              showError("Python Error:\n" + e.toString());
-          }
+              await Sk.misceval.asyncToPromise(function() { return Sk.importMainWithBody("<stdin>", false, code, true); });
+              if(consoleEl.textContent === '') consoleEl.textContent = '[Program finished]';
+          } catch(e) { showError("Python Error:\n" + e.toString()); }
           return;
       }
       
-      // 4. API FALLBACK (For C, C++, Java, etc.)
       const PISTON_LANGS = { c: '10.2.0', 'c++': '10.2.0', cpp: '10.2.0', java: '15.0.2' };
       const pistonLang = langStr === 'c++' ? 'cpp' : langStr;
       const pistonVer = PISTON_LANGS[pistonLang] || '*';
       
       const res = await fetch('https://emkc.org/api/v2/piston/execute', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ language: pistonLang, version: pistonVer, files: [{ content: code }] })
       });
       
       const data = await res.json();
       if (data.run) {
           const out = data.run.stdout + (data.run.stderr ? '\n' + data.run.stderr : '');
-          consoleEl.textContent = out || 'Program finished with no output.';
+          consoleEl.textContent = out || '[Program finished]';
           if (data.run.code !== 0 && data.run.stderr) showError("Runtime Error:\n" + data.run.stderr);
-      } else {
-          showError(data.message || 'Execution failed due to an API restriction (Whitelist only).');
-          consoleEl.textContent = 'Execution Failed.';
-      }
+      } else { showError(data.message || 'Execution failed due to an API restriction (Whitelist only).'); consoleEl.textContent = 'Execution Failed.'; }
   } catch (err) {
       showError('Could not connect to compiler API. Local execution is only supported for HTML, CSS, JS, and Python.');
       consoleEl.textContent = 'Connection Error.';
@@ -297,13 +315,10 @@ function updateHeader(isIndex, s = null) {
       const exName = (s.execution && EXEC[s.execution]) ? EXEC[s.execution][0] : 'Compiler';
       const btnNotes = el('button', { className: currentAppState === 'NOTES' ? 'active' : '' }, 'Notes');
       const btnCode = el('button', { className: currentAppState !== 'NOTES' ? 'active' : '' }, exName);
-      
       btnNotes.onclick = () => switchAppState('NOTES');
       btnCode.onclick = () => switchAppState('EDITOR');
       left.replaceChildren(backBtn, el('div', { className: 'header-slider' }, btnNotes, btnCode));
-    } else {
-      left.replaceChildren(backBtn, el('span', { className: 'brand' }, 'Vyut Notes'));
-    }
+    } else { left.replaceChildren(backBtn, el('span', { className: 'brand' }, 'Vyut Notes')); }
   }
 
   if (isIndex || currentAppState === 'NOTES') {
@@ -321,12 +336,11 @@ function updateHeader(isIndex, s = null) {
   }
 }
 
-/* ---------- Code Box & UI Utils ---------- */
+/* ---------- Code Box ---------- */
 async function copyText(text) { try { await navigator.clipboard.writeText(text); return true; } catch (e) { return false; } }
 
 function codeBox(language, code, question, algorithm) {
-  const btn = (label, hide, ...paths) => el('button', { type: 'button', 'aria-label': label },
-    icon(...paths), el('span', { className: 'lbl' + (hide ? ' hide-sm' : '') }, label));
+  const btn = (label, hide, ...paths) => el('button', { type: 'button', 'aria-label': label }, icon(...paths), el('span', { className: 'lbl' + (hide ? ' hide-sm' : '') }, label));
   const share = btn('Share', true, 'M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7', 'M16 6l-4-4-4 4', 'M12 2v13');
   const copy = btn('Copy', true, 'M9 9h11v11H9z', 'M5 15V4h11');
   const algo = btn('Algorithm', false, 'M8 6h13', 'M8 12h13', 'M8 18h13', 'M3 6h.01', 'M3 12h.01', 'M3 18h.01');
@@ -344,7 +358,7 @@ function codeBox(language, code, question, algorithm) {
     el('pre', {}, el('code', {}, highlight(code, language))));
 }
 
-/* ---------- Bottom Sheets (Error, Lang, Algo) ---------- */
+/* ---------- Bottom Sheets (Error, Lang, Algo, Input) ---------- */
 let lastFocus = null;
 
 function setLang(newLang) {
@@ -374,9 +388,7 @@ function openSheet(steps, trigger) {
   sheet.classList.remove('short'); 
   document.getElementById('sheet-title').innerHTML = 'Algorithm';
   const list = Array.isArray(steps) ? steps : steps ? [steps] : [];
-  sheetBody.replaceChildren(list.length
-    ? el('ol', {}, list.map(s => richText('li', {}, s)))
-    : el('p', { className: 'muted' }, 'No algorithm added for this question yet.'));
+  sheetBody.replaceChildren(list.length ? el('ol', {}, list.map(s => richText('li', {}, s))) : el('p', { className: 'muted' }, 'No algorithm added for this question yet.'));
   sheetBody.scrollTop = 0;
   backdrop.hidden = false;
   sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false');
@@ -386,15 +398,44 @@ function openSheet(steps, trigger) {
 
 function showError(msg) {
   sheet.classList.add('short');
-  // Error Title with Red Icon
   document.getElementById('sheet-title').innerHTML = `<svg width="20" height="20" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> <span style="color: #ef4444;">Error</span>`;
-  
-  sheetBody.replaceChildren(
-      el('div', { className: 'err-msg-sheet' }, msg)
-  );
+  sheetBody.replaceChildren(el('div', { className: 'err-msg-sheet' }, msg));
   backdrop.hidden = false;
   sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
+}
+
+// Custom Input Prompt Bottom Sheet for Python
+function openInputSheet(promptMsg, resolveFunc) {
+  pendingInputResolve = resolveFunc;
+  sheet.classList.add('short');
+  document.getElementById('sheet-title').innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 17l6-6-6-6M12 19h8"></path></svg> <span>Input Required</span>`;
+  
+  const inputBox = el('input', { type: 'text', className: 'input-prompt-box', placeholder: 'Type your input here...' });
+  const submitBtn = el('button', { className: 'input-prompt-btn' }, 'Submit');
+  
+  submitBtn.onclick = () => {
+      const val = inputBox.value;
+      closeSheet();
+      if(pendingInputResolve) { pendingInputResolve(val); pendingInputResolve = null; }
+  };
+  
+  inputBox.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter') submitBtn.onclick();
+  });
+  
+  sheetBody.replaceChildren(
+      el('div', { className: 'input-prompt-label' }, promptMsg),
+      inputBox,
+      submitBtn
+  );
+  
+  backdrop.hidden = false;
+  sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+  
+  // Auto focus input after small delay for animation
+  setTimeout(() => inputBox.focus(), 300);
 }
 
 function closeSheet() {
@@ -402,14 +443,20 @@ function closeSheet() {
   sheet.classList.remove('open'); sheet.setAttribute('aria-hidden', 'true');
   backdrop.hidden = true; document.body.style.overflow = '';
   if (lastFocus) lastFocus.focus();
+  
+  // If user closed sheet without answering input
+  if(pendingInputResolve) {
+      pendingInputResolve("");
+      pendingInputResolve = null;
+  }
 }
 closeBtn.addEventListener('click', closeSheet);
 backdrop.addEventListener('click', closeSheet);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
 
-/* ---------- API Logic ---------- */
-const title = s => (s.title && (s.title[lang] || s.title.en || s.title.hi)) || s.id;
 
+/* ---------- Main API Logic ---------- */
+const title = s => (s.title && (s.title[lang] || s.title.en || s.title.hi)) || s.id;
 function badges(s) {
   const b = el('div', { className: 'badges' });
   if (s.class) b.append(el('span', { className: 'badge' }, `Class ${s.class}`));
@@ -444,9 +491,8 @@ async function home() {
   const skills = await loadSkills();
   const list = el('div', { className: 'list' });
   
-  if (!skills.length) {
-    list.append(el('p', { className: 'muted' }, 'No chapters found.'));
-  } else {
+  if (!skills.length) { list.append(el('p', { className: 'muted' }, 'No chapters found.')); } 
+  else {
     skills.forEach(s => {
       const descText = s.description ? (s.description[lang] || s.description.en || s.description.hi) : (s.summary || '');
       const descEl = descText ? el('p', { className: 'desc' }, descText) : null;
@@ -454,7 +500,6 @@ async function home() {
       list.append(el('a', { className: 'item', href: `#/${s.id}` }, topRow, descEl));
     });
   }
-  
   app.lang = 'en';
   app.replaceChildren(list); 
 }
@@ -476,7 +521,6 @@ async function chapter(id) {
   currentSkill = s;
   currentAppState = 'NOTES';
   
-  // 1. NOTES VIEW
   const headerContainer = el('div', { className: 'chapter-header' }, el('h1', {}, title(s)), badges(s));
   const out = [headerContainer];
   
@@ -508,7 +552,7 @@ async function chapter(id) {
   
   const notesView = el('div', { id: 'notes-view' }, ...out);
 
-  // 2. PLAYGROUND VIEW (Editor & Output)
+  // --- PLAYGROUND SETUP (Editor & Output) ---
   const isHTML = (s.language || '').toLowerCase() === 'html';
   
   playgroundFiles = {
@@ -519,7 +563,7 @@ async function chapter(id) {
   currentFileExt = 'html';
 
   const defaultCodes = {
-      'python': 'print("Hello, World!")',
+      'python': 'a = int(input("Enter first number: "))\nb = int(input("Enter second number: "))\ntotal = a + b\nprint("Sum =", total)',
       'javascript': 'console.log("Hello, World!");',
       'c': '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}',
       'c++': '#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}'
@@ -528,9 +572,16 @@ async function chapter(id) {
   const editorArea = el('textarea', { id: 'code-editor', spellcheck: 'false' });
   editorArea.value = isHTML ? playgroundFiles.html : (defaultCodes[(s.language || '').toLowerCase()] || '// Write your code here');
   
+  const highlighter = el('pre', { id: 'code-highlighter' });
+  const lineNumbers = el('div', { id: 'line-numbers' });
+
+  // Sync Logics
   editorArea.addEventListener('input', e => {
       if(isHTML) playgroundFiles[currentFileExt] = e.target.value;
+      syncEditorLogic();
   });
+  
+  editorArea.addEventListener('scroll', syncEditorScroll);
   
   editorArea.addEventListener('keydown', e => {
       if (e.key === 'Tab') {
@@ -539,6 +590,7 @@ async function chapter(id) {
           const end = editorArea.selectionEnd;
           editorArea.value = editorArea.value.substring(0, start) + "    " + editorArea.value.substring(end);
           editorArea.selectionStart = editorArea.selectionEnd = start + 4;
+          syncEditorLogic();
       }
   });
 
@@ -551,16 +603,19 @@ async function chapter(id) {
               btn.classList.add('active');
               currentFileExt = ext;
               editorArea.value = playgroundFiles[ext];
+              syncEditorLogic();
           };
           return btn;
       };
       fileTabsBar = el('div', { className: 'file-tabs' }, mkTab('html', 'index.html'), mkTab('css', 'style.css'), mkTab('js', 'script.js'));
-      editorArea.classList.add('with-tabs');
   }
+
+  const codeAreaWrapper = el('div', { className: 'code-area-wrapper' }, highlighter, editorArea);
+  const editorContainer = el('div', { className: 'editor-container' + (isHTML ? ' with-tabs' : '') }, lineNumbers, codeAreaWrapper);
 
   const editorWrap = el('div', { style: 'display:flex; flex-direction:column; height:100%;' });
   if (fileTabsBar) editorWrap.append(fileTabsBar);
-  editorWrap.append(editorArea);
+  editorWrap.append(editorContainer);
 
   const editorView = el('div', { id: 'editor-view', style: 'display:none;' }, editorWrap);
   const outputView = el('div', { id: 'output-view', style: 'display:none;' }, el('pre', { id: 'output-console' }));
@@ -569,6 +624,9 @@ async function chapter(id) {
   
   app.lang = lang;
   app.replaceChildren(notesView, playgroundView);
+  
+  // Initial Sync Editor
+  setTimeout(syncEditorLogic, 10);
   
   updateHeader(false, currentSkill);
 }
