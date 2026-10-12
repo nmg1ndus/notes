@@ -45,28 +45,47 @@ function toast(msg) {
   clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove('show'), 1600);
 }
 
-/* ---------- Text Formatter (Markdown) ---------- */
+/* ---------- Text Formatter (Advanced Markdown) ---------- */
 function formatText(str) {
   if (typeof str !== 'string') return str;
-  // Bold, Italic, and Inline Code (both `backticks` and 'single quotes')
+  
+  // Bold, Italic, Underline (__text__), and Inline Code
   let html = str
     .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
     .replace(/\*([^*]+)\*/g, '<i>$1</i>')
+    .replace(/__([^_]+)__/g, '<u>$1</u>')
     .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
     .replace(/(^|[\s(])'([^'\n]+)'(?=[\s.,!?)\]]|$)/g, '$1<code class="inline-code">$2</code>');
     
-  // Table Parsing: Line by Line
+  // Robust Table Parsing
   if (html.includes('|')) {
     const lines = html.split('\n');
     let result = [], inTable = false, tableHtml = '';
-    for (let line of lines) {
-      if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
-        if (!inTable) { inTable = true; tableHtml = '<div class="table-wrap"><table>'; }
-        const cells = line.split('|').map(c => c.trim()).filter((c, i, a) => i > 0 && i < a.length - 1);
-        tableHtml += '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+    
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i].trim();
+      
+      if (line.startsWith('|') && line.endsWith('|')) {
+        // Skip Markdown table separator (e.g., |---|---|)
+        if (/^\|[\s-:]+\|/.test(line) && line.replace(/[^|-]/g, '').length >= 3) {
+          continue; 
+        }
+        
+        if (!inTable) { 
+          inTable = true; 
+          tableHtml = '<div class="table-wrap"><table>'; 
+        }
+        
+        const cells = line.split('|').map(c => c.trim()).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+        const cellTag = (tableHtml === '<div class="table-wrap"><table>') ? 'th' : 'td';
+        tableHtml += '<tr>' + cells.map(c => `<${cellTag}>${c}</${cellTag}>`).join('') + '</tr>';
       } else {
-        if (inTable) { inTable = false; result.push(tableHtml + '</table></div>'); tableHtml = ''; }
-        result.push(line);
+        if (inTable) { 
+          inTable = false; 
+          result.push(tableHtml + '</table></div>'); 
+          tableHtml = ''; 
+        }
+        result.push(lines[i]);
       }
     }
     if (inTable) result.push(tableHtml + '</table></div>');
@@ -155,7 +174,7 @@ function openLangSheet() {
 
 function openSheet(steps, trigger) {
   lastFocus = trigger;
-  sheet.classList.remove('short'); // एल्गोरिथ्म के लिए फुल हाइट
+  sheet.classList.remove('short'); 
   document.getElementById('sheet-title').textContent = 'Algorithm';
   const list = Array.isArray(steps) ? steps : steps ? [steps] : [];
   sheetBody.replaceChildren(list.length
@@ -200,7 +219,6 @@ function codeBox(language, code, question, algorithm) {
   algo.addEventListener('click', () => openSheet(algorithm, algo));
   
   return el('div', { className: 'code' },
-    // यहाँ कोड लैंग्वेज का नाम स्मॉल लेटर (toLowerCase) में सेट किया गया है
     el('div', { className: 'code-bar' }, el('span', { className: 'code-lang' }, (language || 'Code').toLowerCase()), el('div', { className: 'acts' }, share, copy, algo)),
     el('pre', {}, el('code', {}, highlight(code, language))));
 }
@@ -215,7 +233,6 @@ function updateHeader(isIndex, s = null) {
   let right = document.getElementById('header-right');
   if (!right) { right = el('div', { id: 'header-right' }); headerTop.append(right); }
   
-  // पुरानी फालतू चीज़ें साफ़ करें (अगर index.html में रह गई हों)
   const oldLang = headerTop.querySelector('.lang');
   if (oldLang) oldLang.remove();
   const oldBrand = headerTop.querySelector('.brand:not(#header-left .brand)');
@@ -237,7 +254,6 @@ function updateHeader(isIndex, s = null) {
     }
   }
 
-  // लैंग्वेज बटन
   const globeIcon = icon('M22 12A10 10 0 112 12a10 10 0 0120 0z', 'M2 12h20', 'M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z');
   const langBtn = el('button', { className: 'lang-btn', onclick: openLangSheet, 'aria-label': 'Change Language' }, globeIcon, el('span', {}, 'A/अ'));
   right.replaceChildren(langBtn);
@@ -286,30 +302,29 @@ async function home() {
   const skills = await loadSkills();
   const list = el('div', { className: 'list' });
   
-  const draw = q => {
-    list.replaceChildren();
-    const hits = skills.filter(s => (title(s) + ' ' + (s.tags || []).join(' ')).toLowerCase().includes(q.toLowerCase()));
-    
-    if (!hits.length) list.append(el('p', { className: 'muted' }, 'No chapters found.'));
-    
-    hits.forEach(s => {
+  if (!skills.length) {
+    list.append(el('p', { className: 'muted' }, 'No chapters found.'));
+  } else {
+    // सर्च बॉक्स और 'All chapters' हेडिंग दोनों हटा दिए गए हैं, सीधे लिस्ट रेंडर होगी
+    skills.forEach(s => {
       const descText = s.description ? (s.description[lang] || s.description.en || s.description.hi) : (s.summary || '');
       const descEl = descText ? el('p', { className: 'desc' }, descText) : null;
       
-      list.append(el('a', { className: 'item', href: `#/${s.id}` }, 
+      // क्लास बैज को राइट में रखने के लिए हेडर रो
+      const topRow = el('div', { className: 'item-header' }, 
         el('b', {}, title(s)), 
-        descEl,
         badges(s)
+      );
+      
+      list.append(el('a', { className: 'item', href: `#/${s.id}` }, 
+        topRow,
+        descEl
       ));
     });
-  };
-  
-  const box = el('input', { type: 'search', placeholder: 'Search chapters', 'aria-label': 'Search chapters' });
-  box.addEventListener('input', () => draw(box.value));
+  }
   
   app.lang = 'en';
-  app.replaceChildren(el('h1', {}, 'All chapters'), box, list);
-  draw('');
+  app.replaceChildren(list); 
 }
 
 async function chapter(id) {
@@ -326,7 +341,6 @@ async function chapter(id) {
   document.title = `${title(s)} | Computer Notes`;
   updateHeader(false, s);
   
-  // टाइटल और क्लास बैज को एक ही लाइन में रखने के लिए
   const headerContainer = el('div', { className: 'chapter-header' }, 
     el('h1', {}, title(s)), 
     badges(s)
@@ -338,7 +352,7 @@ async function chapter(id) {
     
     if (d.summary) {
       out.push(richText('p', { className: 'summary' }, d.summary));
-      out.push(el('hr', { className: 'thin-line' })); // समरी के नीचे लाइन
+      out.push(el('hr', { className: 'thin-line' }));
     }
     
     (d.sections || []).forEach(sec => {
@@ -352,7 +366,7 @@ async function chapter(id) {
     
     (d.questions || []).forEach((q, n) => {
       const box = el('article', { className: 'qa' });
-      if (n > 0) box.append(el('hr', { className: 'thin-line' })); // हर क्वेश्चन से पहले लाइन (पहले वाले को छोड़कर)
+      if (n > 0) box.append(el('hr', { className: 'thin-line' })); 
       box.append(richText('h2', {}, `${n + 1}. ${q.q}`));
       [].concat(q.answer || []).forEach(p => box.append(richText('p', {}, p)));
       if (s.programming && q.code) box.append(codeBox(q.language || s.language, q.code, q.q, q.algorithm));
