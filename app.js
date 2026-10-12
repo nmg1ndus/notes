@@ -1,4 +1,4 @@
-// Clean URLs: notes.vyut.in/python  ->  folders /python/{skill,english,hindi}.json at the site root
+// Hash URLs: notes.vyut.in/#/python -> folders python/{skill,english,hindi}.json
 const app = document.getElementById('app');
 const sheet = document.getElementById('sheet');
 const sheetBody = document.getElementById('sheet-body');
@@ -54,7 +54,7 @@ const LANGS = {
   python: mk(/#.*/, PYSTR, 'False None True and as assert break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield', 'print input int str float len range list dict set tuple type open sum min max abs sorted bool enumerate zip map'),
   javascript: mk(CCOM, CSTR, 'var let const function return if else for while do switch case break continue new this class extends import export from true false null undefined try catch throw async await typeof', 'console document window Math Array Object JSON String Number'),
   java: mk(CCOM, CSTR, 'public private protected static final class interface extends implements new return if else for while do switch case break continue void int long double float char boolean byte short true false null try catch throw throws import package this super', 'System String Math Scanner ArrayList'),
-  c: mk(CPRE, CSTR, 'int float double char long short void unsigned signed struct typedef enum const static return if else for while do switch case break continue sizeof NULL', 'printf scanf main malloc free strlen'),
+  c: mk(CPRE, CSTR, 'int float double char long short void unsigned signed struct typedef enum const static return if else for while do switch case break continue sizeof NULL', 'printf scanf main main malloc free strlen'),
   cpp: mk(CPRE, CSTR, 'int float double char long short void bool unsigned struct class public private using namespace new delete const static return if else for while do switch case break continue true false', 'cout cin endl std string vector main')
 };
 const ALIAS = { py: 'python', js: 'javascript', 'c++': 'cpp' };
@@ -145,14 +145,17 @@ function badges(s) {
   if (s.programming && EXEC[s.execution]) b.append(el('span', { className: 'badge code' }, EXEC[s.execution][0]));
   return b;
 }
+
+// URL Paths को Relative बना दिया गया है
 async function loadSkills() {
-  const ids = await getJSON('/chapters.json');
+  const ids = await getJSON('chapters.json');
   return Promise.all(ids.map(async id => {
-    try { return { id, ...(await getJSON(`/${id}/skill.json`)) }; }
+    try { return { id, ...(await getJSON(`${id}/skill.json`)) }; }
     catch (e) { return { id, title: { en: id } }; }
   }));
 }
-const link = (href, ...kids) => el('a', { href, 'data-nav': '' }, ...kids);
+
+const link = (href, ...kids) => el('a', { href }, ...kids);
 
 async function home() {
   document.title = 'Computer Notes';
@@ -162,7 +165,8 @@ async function home() {
     list.replaceChildren();
     const hits = skills.filter(s => (title(s) + ' ' + (s.tags || []).join(' ')).toLowerCase().includes(q.toLowerCase()));
     if (!hits.length) list.append(el('p', { className: 'muted' }, 'No chapters found.'));
-    hits.forEach(s => list.append(el('a', { className: 'item', href: `/${s.id}`, 'data-nav': '' }, el('b', {}, title(s)), badges(s))));
+    // Href में Hash(#) जोड़ा गया
+    hits.forEach(s => list.append(el('a', { className: 'item', href: `#/${s.id}` }, el('b', {}, title(s)), badges(s))));
   };
   const box = el('input', { type: 'search', placeholder: 'Search chapters', 'aria-label': 'Search chapters' });
   box.addEventListener('input', () => draw(box.value));
@@ -177,7 +181,8 @@ async function chapter(id) {
   const s = skills[i];
   if (!s) {
     document.title = 'Not found | Computer Notes';
-    app.replaceChildren(el('h1', {}, 'Chapter not found'), link('/', 'Back to all chapters'));
+    // Back to home लिंक में Hash(#)
+    app.replaceChildren(el('h1', {}, 'Chapter not found'), link('#/', 'Back to all chapters'));
     return;
   }
   document.title = `${title(s)} | Computer Notes`;
@@ -187,7 +192,8 @@ async function chapter(id) {
     out.push(el('div', { className: 'skill' }, el('b', {}, [s.language, ex && ex[0]].filter(Boolean).join(' · ')), ex ? el('p', {}, ex[1]) : null));
   }
   try {
-    const d = await getJSON(`/${id}/${lang === 'hi' ? 'hindi' : 'english'}.json`);
+    // Relative Path
+    const d = await getJSON(`${id}/${lang === 'hi' ? 'hindi' : 'english'}.json`);
     if (d.summary) out.push(el('p', { className: 'summary' }, d.summary));
     (d.sections || []).forEach(sec => {
       const box = el('section', { className: 'sec' }, el('h2', {}, sec.heading || ''));
@@ -203,32 +209,36 @@ async function chapter(id) {
       out.push(box);
     });
   } catch (e) { out.push(el('p', { className: 'muted' }, 'Notes are not available in this language yet.')); }
+  
   const prev = skills[i - 1], next = skills[i + 1];
+  // Pagination लिंक्स में Hash(#)
   out.push(el('nav', { className: 'nav' },
-    prev ? link(`/${prev.id}`, '\u2190 Previous') : el('span'),
-    next ? link(`/${next.id}`, 'Next \u2192') : el('span')));
+    prev ? link(`#/${prev.id}`, '\u2190 Previous') : el('span'),
+    next ? link(`#/${next.id}`, 'Next \u2192') : el('span')));
   app.lang = lang;
   app.replaceChildren(...out);
 }
 
+// Routing Logic को Hash-based में बदला गया
 async function route() {
   closeSheet();
   document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === lang));
-  const id = decodeURIComponent(location.pathname.replace(/^\/+|\/+$/g, ''));
+  // Hash से ID निकाल रहे हैं (जैसे #/python से python)
+  const id = decodeURIComponent(location.hash.replace(/^#\/?/, '').replace(/\/$/, ''));
   try { await (!id || id === 'index.html' ? home() : chapter(id)); }
   catch (e) { app.replaceChildren(el('p', { className: 'muted' }, 'Could not load notes. Check your connection and try again.')); }
 }
+
 document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => {
   lang = b.dataset.lang;
   try { localStorage.setItem('lang', lang); } catch (e) {}
   route();
 }));
-document.addEventListener('click', e => {
-  const a = e.target.closest('a[data-nav]');
-  if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
-  e.preventDefault();
-  history.pushState(null, '', a.getAttribute('href'));
+
+// Browser के डिफ़ॉल्ट Hashchange इवेंट का इस्तेमाल कर रहे हैं
+window.addEventListener('hashchange', () => {
   route().then(() => window.scrollTo(0, 0));
 });
-window.addEventListener('popstate', route);
+
+// App शुरुआत में लोड करने के लिए
 route();
