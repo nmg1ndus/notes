@@ -1,4 +1,7 @@
-// Hash URLs: notes.vyut.in/#/python -> folders python/{skill,english,hindi}.json
+// Hash URLs: user.github.io/notes/#/python -> folders python/{skill,english,hindi}.json
+const GITHUB_USER = 'nmg1ndus'; 
+const GITHUB_REPO = 'notes';
+
 const app = document.getElementById('app');
 const sheet = document.getElementById('sheet');
 const sheetBody = document.getElementById('sheet-body');
@@ -20,6 +23,7 @@ function el(tag, props = {}, ...kids) {
   kids.flat().forEach(k => k != null && n.append(k));
   return n;
 }
+
 function icon(...paths) {
   const s = document.createElementNS(NS, 'svg');
   [['viewBox', '0 0 24 24'], ['width', '18'], ['height', '18'], ['fill', 'none'], ['stroke', 'currentColor'],
@@ -28,12 +32,14 @@ function icon(...paths) {
   paths.forEach(d => { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); s.append(p); });
   return s;
 }
+
 async function getJSON(path) {
   if (cache[path]) return cache[path];
   const r = await fetch(path);
   if (!r.ok) throw new Error(path);
   return (cache[path] = await r.json());
 }
+
 let tt;
 function toast(msg) {
   toastEl.textContent = msg; toastEl.classList.add('show');
@@ -54,7 +60,7 @@ const LANGS = {
   python: mk(/#.*/, PYSTR, 'False None True and as assert break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield', 'print input int str float len range list dict set tuple type open sum min max abs sorted bool enumerate zip map'),
   javascript: mk(CCOM, CSTR, 'var let const function return if else for while do switch case break continue new this class extends import export from true false null undefined try catch throw async await typeof', 'console document window Math Array Object JSON String Number'),
   java: mk(CCOM, CSTR, 'public private protected static final class interface extends implements new return if else for while do switch case break continue void int long double float char boolean byte short true false null try catch throw throws import package this super', 'System String Math Scanner ArrayList'),
-  c: mk(CPRE, CSTR, 'int float double char long short void unsigned signed struct typedef enum const static return if else for while do switch case break continue sizeof NULL', 'printf scanf main main malloc free strlen'),
+  c: mk(CPRE, CSTR, 'int float double char long short void unsigned signed struct typedef enum const static return if else for while do switch case break continue sizeof NULL', 'printf scanf main malloc free strlen'),
   cpp: mk(CPRE, CSTR, 'int float double char long short void bool unsigned struct class public private using namespace new delete const static return if else for while do switch case break continue true false', 'cout cin endl std string vector main')
 };
 const ALIAS = { py: 'python', js: 'javascript', 'c++': 'cpp' };
@@ -146,13 +152,34 @@ function badges(s) {
   return b;
 }
 
-// URL Paths को Relative बना दिया गया है
 async function loadSkills() {
-  const ids = await getJSON('chapters.json');
-  return Promise.all(ids.map(async id => {
-    try { return { id, ...(await getJSON(`${id}/skill.json`)) }; }
-    catch (e) { return { id, title: { en: id } }; }
-  }));
+  try {
+    const repoUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`;
+    const res = await fetch(repoUrl);
+    if (!res.ok) throw new Error('API limit reached or repo not found');
+    const data = await res.json();
+    
+    const folders = data
+      .filter(item => item.type === 'dir' && !item.name.startsWith('.'))
+      .map(item => item.name);
+
+    return await Promise.all(folders.map(async id => {
+      try { 
+        const skillData = await getJSON(`${id}/skill.json`);
+        return { id, ...skillData }; 
+      }
+      catch (e) { 
+        return { id, title: { en: id } }; 
+      }
+    }));
+  } catch (error) {
+    console.warn("Auto-scan failed, using chapters.json fallback");
+    const ids = await getJSON('chapters.json').catch(() => []);
+    return Promise.all(ids.map(async id => {
+      try { return { id, ...(await getJSON(`${id}/skill.json`)) }; }
+      catch (e) { return { id, title: { en: id } }; }
+    }));
+  }
 }
 
 const link = (href, ...kids) => el('a', { href }, ...kids);
@@ -161,15 +188,28 @@ async function home() {
   document.title = 'Computer Notes';
   const skills = await loadSkills();
   const list = el('div', { className: 'list' });
+  
   const draw = q => {
     list.replaceChildren();
     const hits = skills.filter(s => (title(s) + ' ' + (s.tags || []).join(' ')).toLowerCase().includes(q.toLowerCase()));
+    
     if (!hits.length) list.append(el('p', { className: 'muted' }, 'No chapters found.'));
-    // Href में Hash(#) जोड़ा गया
-    hits.forEach(s => list.append(el('a', { className: 'item', href: `#/${s.id}` }, el('b', {}, title(s)), badges(s))));
+    
+    hits.forEach(s => {
+      const descText = s.description ? (s.description[lang] || s.description.en || s.description.hi) : (s.summary || '');
+      const descEl = descText ? el('p', { className: 'muted', style: 'margin: 6px 0; font-size: 15px; line-height: 1.4;' }, descText) : null;
+      
+      list.append(el('a', { className: 'item', href: `#/${s.id}` }, 
+        el('b', {}, title(s)), 
+        descEl,
+        badges(s)
+      ));
+    });
   };
+  
   const box = el('input', { type: 'search', placeholder: 'Search chapters', 'aria-label': 'Search chapters' });
   box.addEventListener('input', () => draw(box.value));
+  
   app.lang = 'en';
   app.replaceChildren(el('h1', {}, 'All chapters'), box, list);
   draw('');
@@ -181,7 +221,6 @@ async function chapter(id) {
   const s = skills[i];
   if (!s) {
     document.title = 'Not found | Computer Notes';
-    // Back to home लिंक में Hash(#)
     app.replaceChildren(el('h1', {}, 'Chapter not found'), link('#/', 'Back to all chapters'));
     return;
   }
@@ -192,7 +231,6 @@ async function chapter(id) {
     out.push(el('div', { className: 'skill' }, el('b', {}, [s.language, ex && ex[0]].filter(Boolean).join(' · ')), ex ? el('p', {}, ex[1]) : null));
   }
   try {
-    // Relative Path
     const d = await getJSON(`${id}/${lang === 'hi' ? 'hindi' : 'english'}.json`);
     if (d.summary) out.push(el('p', { className: 'summary' }, d.summary));
     (d.sections || []).forEach(sec => {
@@ -211,7 +249,6 @@ async function chapter(id) {
   } catch (e) { out.push(el('p', { className: 'muted' }, 'Notes are not available in this language yet.')); }
   
   const prev = skills[i - 1], next = skills[i + 1];
-  // Pagination लिंक्स में Hash(#)
   out.push(el('nav', { className: 'nav' },
     prev ? link(`#/${prev.id}`, '\u2190 Previous') : el('span'),
     next ? link(`#/${next.id}`, 'Next \u2192') : el('span')));
@@ -219,11 +256,9 @@ async function chapter(id) {
   app.replaceChildren(...out);
 }
 
-// Routing Logic को Hash-based में बदला गया
 async function route() {
   closeSheet();
   document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', b.dataset.lang === lang));
-  // Hash से ID निकाल रहे हैं (जैसे #/python से python)
   const id = decodeURIComponent(location.hash.replace(/^#\/?/, '').replace(/\/$/, ''));
   try { await (!id || id === 'index.html' ? home() : chapter(id)); }
   catch (e) { app.replaceChildren(el('p', { className: 'muted' }, 'Could not load notes. Check your connection and try again.')); }
@@ -235,10 +270,8 @@ document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click
   route();
 }));
 
-// Browser के डिफ़ॉल्ट Hashchange इवेंट का इस्तेमाल कर रहे हैं
 window.addEventListener('hashchange', () => {
   route().then(() => window.scrollTo(0, 0));
 });
 
-// App शुरुआत में लोड करने के लिए
 route();
