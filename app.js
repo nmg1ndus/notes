@@ -21,7 +21,9 @@ let currentAppState = 'NOTES';
 let currentSkill = null;
 let playgroundFiles = { html: '', css: '', js: '' };
 let currentFileExt = '';
-let pendingInputResolve = null; 
+let pendingInput = null;      // { resolve, reject } of the open input() popup
+let inputCancelled = false;   // true when the user closed the popup without submitting
+
 
 function el(tag, props = {}, ...kids) {
   const n = document.createElement(tag);
@@ -148,6 +150,8 @@ function switchAppState(newState) {
   const editorView = document.getElementById('editor-view');
   const outputView = document.getElementById('output-view');
   if (!notesView) return; 
+  const playgroundView = document.getElementById('playground-view');
+  if (playgroundView) playgroundView.style.display = newState === 'NOTES' ? 'none' : 'flex';
 
   if (newState === 'NOTES') {
       notesView.style.display = 'block';
@@ -171,19 +175,17 @@ function syncEditorLogic() {
   if (!editor) return;
   const code = editor.value;
   
-  // Line Numbers Set Up
+  // Line numbers
   const lineNumbers = document.getElementById('line-numbers');
-  const linesCount = code.split('\n').length;
-  lineNumbers.innerHTML = Array.from({length: linesCount}, (_, i) => i + 1).join('<br>');
-  
-  // Syntax Highlight Set Up
+  if (lineNumbers) {
+    const linesCount = code.split('\n').length;
+    lineNumbers.innerHTML = Array.from({length: linesCount}, (_, i) => i + 1).join('<br>');
+  }
+
+  // Syntax highlight (extra newline keeps the last empty line scroll-aligned with the textarea)
   const highlighter = document.getElementById('code-highlighter');
   const langStr = currentFileExt || (currentSkill.language || '').toLowerCase();
-  
-  // To avoid HTML tag bugs during typing
-  const safeCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  
-  highlighter.replaceChildren(highlight(code, langStr));
+  highlighter.replaceChildren(highlight(code, langStr), document.createTextNode('\n'));
   syncEditorScroll();
 }
 
@@ -253,21 +255,27 @@ async function runCodeAction() {
                   if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined) throw "File not found: '" + x + "'";
                   return Sk.builtinFiles["files"][x];
               },
+              inputfunTakesPrompt: true,   // prompt text of input("...") is passed to inputfun
+              __future__: Sk.python3,
               inputfun: function(promptText) {
-                  return new Promise((resolve) => {
-                      consoleEl.textContent += promptText;
-                      openInputSheet(promptText, resolve);
+                  consoleEl.textContent += promptText;
+                  return new Promise((resolve, reject) => {
+                      openInputSheet(promptText, resolve, reject);
                   }).then((val) => {
                       consoleEl.textContent += val + "\n";
                       return val;
                   });
               }
           });
+          inputCancelled = false;
           
           try {
               await Sk.misceval.asyncToPromise(function() { return Sk.importMainWithBody("<stdin>", false, code, true); });
               if(consoleEl.textContent === '') consoleEl.textContent = '[Program finished]';
-          } catch(e) { showError("Python Error:\n" + e.toString()); }
+          } catch(e) {
+              if (inputCancelled) consoleEl.textContent += '\n[Input cancelled]\n';
+              else showError("Python Error:\n" + e.toString());
+          }
           return;
       }
       
@@ -352,9 +360,11 @@ function codeBox(language, code, question, algorithm) {
   copy.addEventListener('click', async () => toast(await copyText(code) ? 'Code copied' : 'Could not copy'));
   algo.addEventListener('click', () => openSheet(algorithm, algo));
   
+  const lineCount = code.replace(/\n$/, '').split('\n').length;
+  const gutter = el('div', { className: 'code-gutter', 'aria-hidden': 'true' }, Array.from({ length: lineCount }, (_, i) => i + 1).join('\n'));
   return el('div', { className: 'code' },
     el('div', { className: 'code-bar' }, el('span', { className: 'code-lang' }, (language || 'Code').toLowerCase()), el('div', { className: 'acts' }, share, copy, algo)),
-    el('pre', {}, el('code', {}, highlight(code, language))));
+    el('div', { className: 'code-body' }, gutter, el('pre', {}, el('code', {}, highlight(code, language)))));
 }
 
 /* ---------- Bottom Sheets (Error, Lang, Algo, Input) ---------- */
@@ -404,45 +414,48 @@ function showError(msg) {
   document.body.style.overflow = 'hidden';
 }
 
-// Custom Input Prompt - UI updated to block autofill
-function openInputSheet(promptMsg, resolveFunc) {
-  pendingInputResolve = resolveFunc;
+// Custom Input Prompt (contenteditable instead of <input>: Chrome/Gboard show no password/card/map autofill bar)
+function openInputSheet(promptMsg, resolveFunc, rejectFunc) {
+  pendingInput = { resolve: resolveFunc, reject: rejectFunc };
+  lastFocus = null;
   sheet.classList.add('short');
   document.getElementById('sheet-title').innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 17l6-6-6-6M12 19h8"></path></svg> <span>Input Required</span>`;
-  
-  // Blocking browser auto-fills and password managers
-  const inputBox = el('input', { 
-      type: 'text', 
-      className: 'input-prompt-box', 
-      autocomplete: 'off',
-      autocorrect: 'off',
-      spellcheck: 'false',
-      'data-lpignore': 'true',
-      'data-1p-ignore': 'true'
-  });
-  inputBox.value = ''; // Ensure blank box
-  
-  const submitBtn = el('button', { className: 'input-prompt-btn' }, 'Submit');
-  
-  submitBtn.onclick = () => {
-      const val = inputBox.value;
-      closeSheet();
-      if(pendingInputResolve) { pendingInputResolve(val); pendingInputResolve = null; }
+
+  const inputBox = el('div', { className: 'input-prompt-box' });
+  const probe = document.createElement('div');
+  try { probe.contentEditable = 'plaintext-only'; } catch (e) {}
+  inputBox.contentEditable = probe.contentEditable === 'plaintext-only' ? 'plaintext-only' : 'true';
+  [['role', 'textbox'], ['aria-label', promptMsg || 'Input'], ['data-placeholder', 'Type here...'],
+   ['enterkeyhint', 'done'], ['inputmode', 'text'], ['autocapitalize', 'off'], ['autocorrect', 'off'],
+   ['autocomplete', 'off'], ['spellcheck', 'false'], ['data-lpignore', 'true'], ['data-1p-ignore', 'true'],
+   ['data-form-type', 'other']].forEach(([k, v]) => inputBox.setAttribute(k, v));
+
+  const submitBtn = el('button', { className: 'input-prompt-btn', type: 'button' }, 'Submit');
+  const submit = () => {
+    const p = pendingInput;
+    if (!p) return;
+    const val = (inputBox.textContent || '').replace(/[\r\n]+/g, ' ');
+    pendingInput = null;      // clear first, so closeSheet() does not treat this as a cancel
+    p.resolve(val);
+    closeSheet();
   };
-  
-  inputBox.addEventListener('keydown', (e) => {
-      if(e.key === 'Enter') submitBtn.onclick();
+  submitBtn.onclick = submit;
+
+  inputBox.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+  inputBox.addEventListener('beforeinput', e => {   // Android keyboards often send Enter this way
+    if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') { e.preventDefault(); submit(); }
   });
-  
-  // Label for prompt string
-  const promptLabel = el('div', { className: 'input-prompt-label' }, promptMsg);
-  
+  inputBox.addEventListener('input', () => { if (!inputBox.textContent) inputBox.innerHTML = ''; });
+
+  // Prompt text of input("...") shown above the box
+  const promptLabel = el('div', { className: 'input-prompt-label' }, promptMsg || '');
+
   sheetBody.replaceChildren(promptLabel, inputBox, submitBtn);
-  
+
   backdrop.hidden = false;
   sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
-  
+
   setTimeout(() => inputBox.focus(), 300);
 }
 
@@ -451,10 +464,12 @@ function closeSheet() {
   sheet.classList.remove('open'); sheet.setAttribute('aria-hidden', 'true');
   backdrop.hidden = true; document.body.style.overflow = '';
   if (lastFocus) lastFocus.focus();
-  
-  if(pendingInputResolve) {
-      pendingInputResolve(""); // Python handles empty string error appropriately
-      pendingInputResolve = null;
+
+  if (pendingInput) {       // popup closed without Submit -> stop the program (no fake empty input)
+    const p = pendingInput;
+    pendingInput = null;
+    inputCancelled = true;
+    p.reject(new Error('INPUT_CANCELLED'));
   }
 }
 closeBtn.addEventListener('click', closeSheet);
@@ -576,11 +591,11 @@ async function chapter(id) {
       'c++': '#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}'
   };
   
-  const editorArea = el('textarea', { id: 'code-editor', spellcheck: 'false' });
+  const editorArea = el('textarea', { id: 'code-editor', spellcheck: false, autocapitalize: 'off', autocomplete: 'off', autocorrect: 'off', wrap: 'off' });
   editorArea.value = isHTML ? playgroundFiles.html : (defaultCodes[(s.language || '').toLowerCase()] || '// Write your code here');
   
   const highlighter = el('pre', { id: 'code-highlighter' });
-  const lineNumbers = el('div', { id: 'line-numbers' });
+  const lineNumbers = el('div', { id: 'line-numbers', className: 'line-numbers' });
 
   editorArea.addEventListener('input', e => {
       if(isHTML) playgroundFiles[currentFileExt] = e.target.value;
@@ -626,7 +641,7 @@ async function chapter(id) {
   const editorView = el('div', { id: 'editor-view', style: 'display:none;' }, editorWrap);
   const outputView = el('div', { id: 'output-view', style: 'display:none;' }, el('pre', { id: 'output-console' }));
   
-  const playgroundView = el('div', { id: 'playground-view' }, editorView, outputView);
+  const playgroundView = el('div', { id: 'playground-view', style: 'display:none;' }, editorView, outputView);
   
   app.lang = lang;
   app.replaceChildren(notesView, playgroundView);

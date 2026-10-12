@@ -95,6 +95,11 @@ u { text-decoration: underline; text-underline-offset: 3px; text-decoration-colo
 .acts button:hover { background: #334155; color: #f1f5f9; }
 .code pre { margin: 0; padding: 16px; overflow-x: auto; color: #f8fafc; font: 14px/1.6 'Fira Code', monospace; tab-size: 4; }
 
+/* नोट्स कोड बॉक्स - लाइन नंबर (1 2 3 ...) */
+.code-body { display: flex; align-items: flex-start; }
+.code-gutter { flex-shrink: 0; padding: 16px 10px 16px 14px; color: #64748b; background: #1e293b; border-right: 1px solid #334155; text-align: right; white-space: pre; user-select: none; -webkit-user-select: none; font: 14px/1.6 'Fira Code', monospace; font-variant-ligatures: none; min-width: 40px; }
+.code-body pre { flex: 1; min-width: 0; }
+
 /* Syntax Highlighting Colors */
 .t-kw { color: #c678dd; } .t-str { color: #98c379; } .t-num { color: #d19a66; } .t-com { color: #5c6370; font-style: italic; }
 .t-fn { color: #61afef; } .t-bi { color: #56b6c2; } .t-tag { color: #e06c75; } .t-attr { color: #d19a66; }
@@ -105,7 +110,7 @@ u { text-decoration: underline; text-underline-offset: 3px; text-decoration-colo
 .muted { color: var(--muted); }
 
 /* --- Playground (Editor & Output) Styles --- */
-#playground-view { height: calc(100vh - 100px); width: 100%; display: flex; flex-direction: column; padding: 16px; }
+#playground-view { height: calc(100vh - 100px); height: calc(100dvh - 100px); width: 100%; display: flex; flex-direction: column; padding: 16px; }
 #editor-view, #output-view { flex: 1; height: 100%; display: flex; flex-direction: column; }
 
 /* Files Tabs */
@@ -115,7 +120,7 @@ u { text-decoration: underline; text-underline-offset: 3px; text-decoration-colo
 .file-tab.active { background: #3b82f6; color: #fff; }
 
 /* Code Editor Wrapper with Line Numbers */
-.editor-container { flex: 1; display: flex; background: #0f172a; border-radius: 12px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
+.editor-container { flex: 1; min-height: 0; display: flex; background: #0f172a; border-radius: 12px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); }
 .editor-container.with-tabs { border-radius: 0 0 12px 12px; }
 
 /* Editor Font Variables (Crucial for sync) */
@@ -124,13 +129,15 @@ u { text-decoration: underline; text-underline-offset: 3px; text-decoration-colo
   font-size: 14.5px;
   line-height: 1.5;
   margin: 0;
+  font-variant-ligatures: none;
+  letter-spacing: 0;
 }
 
-.line-numbers { padding: 16px 8px; background: #1e293b; color: #64748b; text-align: right; user-select: none; border-right: 1px solid #334155; overflow: hidden; min-width: 44px; }
-.code-area-wrapper { flex: 1; position: relative; overflow: auto; background: #0f172a; }
+.line-numbers { flex-shrink: 0; padding: 16px 10px 80px 12px; background: #1e293b; color: #94a3b8; text-align: right; white-space: pre; user-select: none; -webkit-user-select: none; border-right: 1px solid #334155; overflow: hidden; min-width: 46px; }
+.code-area-wrapper { flex: 1; min-width: 0; position: relative; overflow: hidden; background: #0f172a; }
 
-#code-editor { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 16px; background: transparent; color: transparent; caret-color: #f8fafc; border: none; resize: none; outline: none; tab-size: 4; z-index: 2; white-space: pre; overflow: auto; }
-#code-highlighter { position: absolute; top: 0; left: 0; width: 100%; min-height: 100%; padding: 16px; background: transparent; color: #f8fafc; tab-size: 4; z-index: 1; pointer-events: none; white-space: pre; overflow: hidden;}
+#code-editor { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 16px 16px 80px; background: transparent; color: transparent; caret-color: #f8fafc; border: none; resize: none; outline: none; tab-size: 4; z-index: 2; white-space: pre; overflow: auto; }
+#code-highlighter { position: absolute; top: 0; left: 0; width: 100%; height: 100%; padding: 16px 16px 80px; background: transparent; color: #f8fafc; tab-size: 4; z-index: 1; pointer-events: none; white-space: pre; overflow: hidden;}
 
 #output-console { flex: 1; background: #000; color: #10b981; font-family: 'Fira Code', monospace; font-size: 14.5px; padding: 16px; border-radius: 12px; overflow-y: auto; white-space: pre-wrap; margin: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); }
 
@@ -151,9 +158,11 @@ u { text-decoration: underline; text-underline-offset: 3px; text-decoration-colo
 .lang-opt.active { border-color: var(--accent); color: var(--accent); background: #eff6ff; }
 @media (prefers-color-scheme: dark) { .lang-opt.active { background: #1e3a8a; border-color: #3b82f6; color: #eff6ff; } }
 
-/* Input Prompt UI - (Updated to remove password manager box) */
-.input-prompt-label { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--accent); font-family: 'Fira Code', monospace; background: var(--bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line);}
-.input-prompt-box { width: 100%; padding: 12px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font-family: 'Fira Code', monospace; font-size: 16px; margin-bottom: 16px; }
+/* Input Prompt UI (input() popup) - prompt label above, contenteditable box (no autofill bar) */
+.input-prompt-label { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: var(--accent); font-family: 'Fira Code', monospace; background: var(--bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--line); white-space: pre-wrap; word-break: break-word; }
+.input-prompt-label:empty { display: none; }
+.input-prompt-box { display: block; width: 100%; min-height: 48px; max-height: 120px; overflow-y: auto; padding: 12px 16px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font-family: 'Fira Code', monospace; font-size: 16px; line-height: 1.4; margin-bottom: 16px; white-space: pre-wrap; word-break: break-all; outline: none; -webkit-user-select: text; user-select: text; -webkit-tap-highlight-color: transparent; }
+.input-prompt-box:empty::before { content: attr(data-placeholder); color: var(--muted); pointer-events: none; }
 .input-prompt-box:focus { border-color: var(--accent); }
 .input-prompt-btn { width: 100%; padding: 12px; border: none; border-radius: 8px; background: var(--accent); color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; }
 
