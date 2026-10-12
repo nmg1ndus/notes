@@ -3,7 +3,7 @@
 Vyut Notes is a modern, static, single-page application (SPA) designed for reading computer science notes and writing/executing code directly within the browser. It features a completely serverless architecture, utilizing hash-based routing and the GitHub REST API to dynamically fetch and display chapters.
 
 ## Features
-
+ 
 *   **Integrated Playground (IDE):** 
     *   **Local Execution:** Run HTML/CSS/JS and Python (via Skulpt) natively in the browser without any backend API.
     *   **Multi-Language Support:** Execute compiled languages like C, C++, and Java via the Piston API fallback.
