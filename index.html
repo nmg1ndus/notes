@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Computer Notes</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;600&family=Fira+Code&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="top">
+  <a href="/" data-nav class="brand">Computer Notes</a>
+  <div class="lang" role="group" aria-label="Notes language">
+    <button type="button" data-lang="en">English</button>
+    <button type="button" data-lang="hi">Hindi</button>
+  </div>
+</header>
+<main id="app" aria-live="polite"></main>
+
+<div id="backdrop" hidden></div>
+<aside id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" aria-hidden="true">
+  <header class="sheet-head">
+    <button type="button" id="sheet-close" aria-label="Close">&#10005;</button>
+    <h3 id="sheet-title">Algorithm</h3>
+  </header>
+  <div id="sheet-body"></div>
+</aside>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="/app.js"></script>
+</body>
+</html>
