@@ -3,7 +3,7 @@
   "questions": [
     {
       "q": "How do you print text on the screen in Python?",
-      "answer": "Use the built-in print() function and put the text inside quotes. Python runs the line and shows the text in the output.",
+      "answer": "**Answer:** Use the built-in print() function and put the text inside quotes. Python runs the line and shows the text in the output.",
       "code": "print(\"Hello, World!\")",
       "algorithm": [
         "Start",
