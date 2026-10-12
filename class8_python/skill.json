@@ -1,15 +1,13 @@
 {
   "title": {
-    "en": "Python Basics",
-    "hi": "पायथन की बुनियादी बातें"
+    "en": "Python Programming",
+    "hi": "पायथन प्रोग्रामिंग"
+  },
+  "description": {
+    "en": "Learn the basics of Python programming.",
+    "hi": "पायथन प्रोग्रामिंग के बेसिक्स सीखें।"
   },
   "class": "8",
   "programming": true,
-  "language": "Python",
-  "execution": "interpreter",
-  "tags": [
-    "python",
-    "print",
-    "input"
-  ]
+  "language": "Python"
 }
