@@ -9,7 +9,6 @@ const closeBtn = document.getElementById('sheet-close');
 const toastEl = document.getElementById('toast');
 const NS = 'http://www.w3.org/2000/svg';
 
-
 let lang = 'en';
 try { lang = localStorage.getItem('lang') === 'hi' ? 'hi' : 'en'; } catch (e) {}
 const cache = {};
@@ -53,24 +52,15 @@ function toast(msg) {
   clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove('show'), 1600);
 }
 
-/* ---------- Error Popup Logic ---------- */
-const errBackdrop = el('div', { id: 'error-backdrop' });
-const errMsgEl = el('p', { className: 'err-msg' });
-const errPopup = el('div', { id: 'error-popup' }, 
-  el('div', { className: 'err-title' }, icon('M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'), 'Error'),
-  errMsgEl,
-  el('button', { className: 'err-close', onclick: closeError }, 'Dismiss')
-);
-document.body.append(errBackdrop, errPopup);
-
-function showError(msg) {
-  errMsgEl.textContent = msg;
-  errBackdrop.classList.add('show');
-  errPopup.classList.add('show');
-}
-function closeError() {
-  errBackdrop.classList.remove('show');
-  errPopup.classList.remove('show');
+// Script Loader for Python Engine
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
 }
 
 /* ---------- Text Formatter (Markdown) ---------- */
@@ -176,18 +166,14 @@ function switchAppState(newState) {
   }
 }
 
-/* ---------- Code Execution (Piston API & HTML) ---------- */
+/* ---------- Code Execution (Local & API Fallback) ---------- */
 async function runCodeAction() {
   const editorArea = document.getElementById('code-editor');
   const langStr = (currentSkill.language || 'python').toLowerCase();
   
-  // HTML मोड में रन करने से पहले करंट टैब का डेटा सेव करना ज़रूरी है
-  if (langStr === 'html') {
-      playgroundFiles[currentFileExt] = editorArea.value;
-  }
+  if (langStr === 'html') playgroundFiles[currentFileExt] = editorArea.value;
   
   const code = editorArea.value;
-  
   if (!code.trim() && langStr !== 'html') return toast('Please enter some code');
   
   switchAppState('OUTPUT');
@@ -195,12 +181,12 @@ async function runCodeAction() {
   consoleEl.textContent = 'Running code...\n';
   
   try {
+      // 1. LOCAL HTML/CSS/JS EXECUTION
       if (langStr === 'html') {
           consoleEl.innerHTML = '';
           const frame = el('iframe', { style: 'width:100%; height:100%; border:none; background:#fff; border-radius:8px;' });
           consoleEl.append(frame);
           
-          // HTML, CSS, JS को एक साथ जोड़कर असली वेबसाइट की तरह रन करना
           const combined = `
           <!DOCTYPE html>
           <html>
@@ -219,35 +205,72 @@ async function runCodeAction() {
           return;
       }
       
-      const PISTON_LANGS = { python: '3.10.0', javascript: '18.15.0', c: '10.2.0', 'c++': '10.2.0', cpp: '10.2.0', java: '15.0.2' };
+      // 2. LOCAL JAVASCRIPT EXECUTION
+      if (langStr === 'javascript' || langStr === 'js') {
+          consoleEl.textContent = '';
+          const originalLog = console.log;
+          console.log = (...args) => {
+              consoleEl.textContent += args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ') + '\n';
+          };
+          try {
+              new Function(code)();
+              if(consoleEl.textContent === '') consoleEl.textContent = '[Program finished with no output]';
+          } catch(e) { showError(e.toString()); }
+          finally { console.log = originalLog; }
+          return;
+      }
+      
+      // 3. LOCAL PYTHON EXECUTION (Using Skulpt)
+      if (langStr === 'python') {
+          consoleEl.textContent = 'Loading Python engine...\n';
+          if (typeof Sk === 'undefined') {
+              await loadScript('https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js');
+              await loadScript('https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js');
+          }
+          consoleEl.textContent = '';
+          
+          Sk.configure({
+              output: function(text) { consoleEl.textContent += text; },
+              read: function(x) {
+                  if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
+                      throw "File not found: '" + x + "'";
+                  return Sk.builtinFiles["files"][x];
+              }
+          });
+          
+          try {
+              await Sk.misceval.asyncToPromise(function() {
+                  return Sk.importMainWithBody("<stdin>", false, code, true);
+              });
+              if(consoleEl.textContent === '') consoleEl.textContent = '[Program finished with no output]';
+          } catch(e) {
+              showError("Python Error:\n" + e.toString());
+          }
+          return;
+      }
+      
+      // 4. API FALLBACK (For C, C++, Java, etc.)
+      const PISTON_LANGS = { c: '10.2.0', 'c++': '10.2.0', cpp: '10.2.0', java: '15.0.2' };
       const pistonLang = langStr === 'c++' ? 'cpp' : langStr;
       const pistonVer = PISTON_LANGS[pistonLang] || '*';
       
       const res = await fetch('https://emkc.org/api/v2/piston/execute', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-              language: pistonLang,
-              version: pistonVer,
-              files: [{ content: code }]
-          })
+          body: JSON.stringify({ language: pistonLang, version: pistonVer, files: [{ content: code }] })
       });
       
       const data = await res.json();
       if (data.run) {
           const out = data.run.stdout + (data.run.stderr ? '\n' + data.run.stderr : '');
           consoleEl.textContent = out || 'Program finished with no output.';
-          
-          // अगर प्रोग्राम में कोई एरर (stderr) है, तो पॉपअप दिखाएं
-          if (data.run.code !== 0 && data.run.stderr) {
-              showError("Runtime Error:\n" + data.run.stderr);
-          }
+          if (data.run.code !== 0 && data.run.stderr) showError("Runtime Error:\n" + data.run.stderr);
       } else {
-          showError(data.message || 'Execution failed due to an unknown error.');
+          showError(data.message || 'Execution failed due to an API restriction (Whitelist only).');
           consoleEl.textContent = 'Execution Failed.';
       }
   } catch (err) {
-      showError('Could not connect to compiler API.\nPlease check your internet connection.');
+      showError('Could not connect to compiler API. Local execution is only supported for HTML, CSS, JS, and Python.');
       consoleEl.textContent = 'Connection Error.';
   }
 }
@@ -321,7 +344,7 @@ function codeBox(language, code, question, algorithm) {
     el('pre', {}, el('code', {}, highlight(code, language))));
 }
 
-/* ---------- Bottom Sheets ---------- */
+/* ---------- Bottom Sheets (Error, Lang, Algo) ---------- */
 let lastFocus = null;
 
 function setLang(newLang) {
@@ -334,7 +357,7 @@ function setLang(newLang) {
 function openLangSheet() {
   lastFocus = document.querySelector('.action-btn');
   sheet.classList.add('short');
-  document.getElementById('sheet-title').textContent = 'Select Language';
+  document.getElementById('sheet-title').innerHTML = 'Select Language';
   sheetBody.replaceChildren(
     el('div', { className: 'lang-opts' },
       el('button', { className: 'lang-opt' + (lang === 'en' ? ' active' : ''), onclick: () => setLang('en') }, 'English'),
@@ -349,7 +372,7 @@ function openLangSheet() {
 function openSheet(steps, trigger) {
   lastFocus = trigger;
   sheet.classList.remove('short'); 
-  document.getElementById('sheet-title').textContent = 'Algorithm';
+  document.getElementById('sheet-title').innerHTML = 'Algorithm';
   const list = Array.isArray(steps) ? steps : steps ? [steps] : [];
   sheetBody.replaceChildren(list.length
     ? el('ol', {}, list.map(s => richText('li', {}, s)))
@@ -359,6 +382,19 @@ function openSheet(steps, trigger) {
   sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
   if (trigger) trigger.focus();
+}
+
+function showError(msg) {
+  sheet.classList.add('short');
+  // Error Title with Red Icon
+  document.getElementById('sheet-title').innerHTML = `<svg width="20" height="20" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> <span style="color: #ef4444;">Error</span>`;
+  
+  sheetBody.replaceChildren(
+      el('div', { className: 'err-msg-sheet' }, msg)
+  );
+  backdrop.hidden = false;
+  sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
 }
 
 function closeSheet() {
@@ -475,7 +511,6 @@ async function chapter(id) {
   // 2. PLAYGROUND VIEW (Editor & Output)
   const isHTML = (s.language || '').toLowerCase() === 'html';
   
-  // HTML मोड के लिए डिफ़ॉल्ट फाइल्स
   playgroundFiles = {
       html: '<h1>Hello, World!</h1>\n<div class="box">Let\'s code in HTML, CSS & JS!</div>\n<button onclick="greet()">Click Me</button>',
       css: 'body {\n  font-family: sans-serif;\n  padding: 20px;\n}\n.box {\n  color: white;\n  background: #2563eb;\n  padding: 15px;\n  border-radius: 8px;\n  margin-bottom: 15px;\n}',
@@ -493,12 +528,10 @@ async function chapter(id) {
   const editorArea = el('textarea', { id: 'code-editor', spellcheck: 'false' });
   editorArea.value = isHTML ? playgroundFiles.html : (defaultCodes[(s.language || '').toLowerCase()] || '// Write your code here');
   
-  // लाइव टाइपिंग सिंक (अगर HTML है तो करंट टैब में सेव करता रहेगा)
   editorArea.addEventListener('input', e => {
       if(isHTML) playgroundFiles[currentFileExt] = e.target.value;
   });
   
-  // Tab Button Logic for Spacing
   editorArea.addEventListener('keydown', e => {
       if (e.key === 'Tab') {
           e.preventDefault();
@@ -509,7 +542,6 @@ async function chapter(id) {
       }
   });
 
-  // HTML मोड में फाइल्स टैब जोड़ना
   let fileTabsBar = null;
   if (isHTML) {
       const mkTab = (ext, label) => {
