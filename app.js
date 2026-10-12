@@ -1,4 +1,3 @@
-// Hash URLs: user.github.io/notes/#/python -> folders python/{skill,english,hindi}.json
 const GITHUB_USER = 'nmg1ndus'; 
 const GITHUB_REPO = 'notes';
 
@@ -26,8 +25,8 @@ function el(tag, props = {}, ...kids) {
 
 function icon(...paths) {
   const s = document.createElementNS(NS, 'svg');
-  [['viewBox', '0 0 24 24'], ['width', '18'], ['height', '18'], ['fill', 'none'], ['stroke', 'currentColor'],
-   ['stroke-width', '2'], ['stroke-linecap', 'round'], ['stroke-linejoin', 'round'], ['aria-hidden', 'true']]
+  [['viewBox', '0 0 24 24'], ['width', '20'], ['height', '20'], ['fill', 'none'], ['stroke', 'currentColor'],
+   ['stroke-width', '2.5'], ['stroke-linecap', 'round'], ['stroke-linejoin', 'round'], ['aria-hidden', 'true']]
     .forEach(([k, v]) => s.setAttribute(k, v));
   paths.forEach(d => { const p = document.createElementNS(NS, 'path'); p.setAttribute('d', d); s.append(p); });
   return s;
@@ -46,7 +45,7 @@ function toast(msg) {
   clearTimeout(tt); tt = setTimeout(() => toastEl.classList.remove('show'), 1600);
 }
 
-/* ---------- syntax highlighting (no libraries) ---------- */
+/* ---------- Syntax Highlighting ---------- */
 const WORDS = s => new Set(s.split(' '));
 const PYSTR = /"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/;
 const CSTR = /"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`/;
@@ -93,7 +92,7 @@ function highlight(code, name) {
   return out;
 }
 
-/* ---------- algorithm bottom sheet ---------- */
+/* ---------- Bottom Sheet ---------- */
 let lastFocus = null;
 function openSheet(steps, trigger) {
   lastFocus = trigger;
@@ -117,7 +116,7 @@ closeBtn.addEventListener('click', closeSheet);
 backdrop.addEventListener('click', closeSheet);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
 
-/* ---------- code box ---------- */
+/* ---------- Code Box ---------- */
 async function copyText(text) {
   try { await navigator.clipboard.writeText(text); return true; } catch (e) { return false; }
 }
@@ -127,28 +126,64 @@ function codeBox(language, code, question, algorithm) {
   const share = btn('Share', true, 'M4 12v7a1 1 0 001 1h14a1 1 0 001-1v-7', 'M16 6l-4-4-4 4', 'M12 2v13');
   const copy = btn('Copy', true, 'M9 9h11v11H9z', 'M5 15V4h11');
   const algo = btn('Algorithm', false, 'M8 6h13', 'M8 12h13', 'M8 18h13', 'M3 6h.01', 'M3 12h.01', 'M3 18h.01');
+  
   share.addEventListener('click', async () => {
     const url = location.href;
     if (navigator.share) {
       try { await navigator.share({ title: question, text: `${question}\n\n${code}`, url }); }
-      catch (e) { /* share sheet dismissed */ }
+      catch (e) {}
     } else toast(await copyText(`${question}\n\n${code}\n\n${url}`) ? 'Copied to share' : 'Could not share');
   });
   copy.addEventListener('click', async () => toast(await copyText(code) ? 'Code copied' : 'Could not copy'));
   algo.addEventListener('click', () => openSheet(algorithm, algo));
+  
   return el('div', { className: 'code' },
     el('div', { className: 'code-bar' }, el('span', { className: 'code-lang' }, language || 'Code'), el('div', { className: 'acts' }, share, copy, algo)),
     el('pre', {}, el('code', {}, highlight(code, language))));
 }
 
-/* ---------- pages ---------- */
+/* ---------- Header Logic ---------- */
+function updateHeader(isIndex, s = null) {
+  const headerTop = document.querySelector('.top');
+  let left = document.getElementById('header-left');
+  
+  if (!left) {
+    left = el('div', { id: 'header-left' });
+    headerTop.insertBefore(left, headerTop.firstChild);
+    const oldBrand = headerTop.querySelector('.brand');
+    if (oldBrand && oldBrand.parentElement === headerTop) oldBrand.remove();
+  }
+
+  if (isIndex) {
+    left.replaceChildren(el('a', { href: '#/', className: 'brand' }, 'Vyut Notes'));
+  } else {
+    // बैक बटन (Arrow Icon)
+    const backBtn = el('a', { href: '#/', className: 'back-btn', 'aria-label': 'Go back' }, icon('M15 18l-6-6 6-6'));
+    
+    if (s && s.programming) {
+      // स्लाइडर (Notes / Compiler)
+      const exName = (s.execution && EXEC[s.execution]) ? EXEC[s.execution][0] : 'Compiler';
+      const btnNotes = el('button', { className: 'active' }, 'Notes');
+      const btnCode = el('button', {}, exName);
+      
+      btnNotes.onclick = () => { btnNotes.classList.add('active'); btnCode.classList.remove('active'); };
+      btnCode.onclick = () => { btnCode.classList.add('active'); btnNotes.classList.remove('active'); };
+      
+      const slider = el('div', { className: 'header-slider' }, btnNotes, btnCode);
+      left.replaceChildren(backBtn, slider);
+    } else {
+      left.replaceChildren(backBtn, el('span', { className: 'brand' }, 'Vyut Notes'));
+    }
+  }
+}
+
+/* ---------- Pages ---------- */
 const title = s => (s.title && (s.title[lang] || s.title.en || s.title.hi)) || s.id;
+
+// अब सिर्फ क्लास का बैज दिखेगा
 function badges(s) {
   const b = el('div', { className: 'badges' });
   if (s.class) b.append(el('span', { className: 'badge' }, `Class ${s.class}`));
-  b.append(el('span', { className: 'badge' + (s.programming ? ' code' : '') }, s.programming ? 'Programming' : 'Theory'));
-  if (s.programming && s.language) b.append(el('span', { className: 'badge code' }, s.language));
-  if (s.programming && EXEC[s.execution]) b.append(el('span', { className: 'badge code' }, EXEC[s.execution][0]));
   return b;
 }
 
@@ -156,7 +191,7 @@ async function loadSkills() {
   try {
     const repoUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/`;
     const res = await fetch(repoUrl);
-    if (!res.ok) throw new Error('API limit reached or repo not found');
+    if (!res.ok) throw new Error('API limit reached');
     const data = await res.json();
     
     const folders = data
@@ -167,13 +202,9 @@ async function loadSkills() {
       try { 
         const skillData = await getJSON(`${id}/skill.json`);
         return { id, ...skillData }; 
-      }
-      catch (e) { 
-        return { id, title: { en: id } }; 
-      }
+      } catch (e) { return { id, title: { en: id } }; }
     }));
   } catch (error) {
-    console.warn("Auto-scan failed, using chapters.json fallback");
     const ids = await getJSON('chapters.json').catch(() => []);
     return Promise.all(ids.map(async id => {
       try { return { id, ...(await getJSON(`${id}/skill.json`)) }; }
@@ -186,6 +217,7 @@ const link = (href, ...kids) => el('a', { href }, ...kids);
 
 async function home() {
   document.title = 'Computer Notes';
+  updateHeader(true);
   const skills = await loadSkills();
   const list = el('div', { className: 'list' });
   
@@ -197,7 +229,7 @@ async function home() {
     
     hits.forEach(s => {
       const descText = s.description ? (s.description[lang] || s.description.en || s.description.hi) : (s.summary || '');
-      const descEl = descText ? el('p', { className: 'muted', style: 'margin: 6px 0; font-size: 15px; line-height: 1.4;' }, descText) : null;
+      const descEl = descText ? el('p', { className: 'desc' }, descText) : null;
       
       list.append(el('a', { className: 'item', href: `#/${s.id}` }, 
         el('b', {}, title(s)), 
@@ -221,15 +253,18 @@ async function chapter(id) {
   const s = skills[i];
   if (!s) {
     document.title = 'Not found | Computer Notes';
+    updateHeader(false);
     app.replaceChildren(el('h1', {}, 'Chapter not found'), link('#/', 'Back to all chapters'));
     return;
   }
+  
   document.title = `${title(s)} | Computer Notes`;
+  updateHeader(false, s);
+  
   const out = [el('h1', {}, title(s)), badges(s)];
-  if (s.programming && (s.language || EXEC[s.execution])) {
-    const ex = EXEC[s.execution];
-    out.push(el('div', { className: 'skill' }, el('b', {}, [s.language, ex && ex[0]].filter(Boolean).join(' · ')), ex ? el('p', {}, ex[1]) : null));
-  }
+  
+  // प्रोग्रामिंग और इंटरप्रेटर की एक्स्ट्रा जानकारी वाला डिब्बा हटा दिया गया है
+  
   try {
     const d = await getJSON(`${id}/${lang === 'hi' ? 'hindi' : 'english'}.json`);
     if (d.summary) out.push(el('p', { className: 'summary' }, d.summary));
@@ -248,10 +283,14 @@ async function chapter(id) {
     });
   } catch (e) { out.push(el('p', { className: 'muted' }, 'Notes are not available in this language yet.')); }
   
-  const prev = skills[i - 1], next = skills[i + 1];
-  out.push(el('nav', { className: 'nav' },
-    prev ? link(`#/${prev.id}`, '\u2190 Previous') : el('span'),
-    next ? link(`#/${next.id}`, 'Next \u2192') : el('span')));
+  const next = skills[i + 1];
+  
+  // सिर्फ Next बटन दिखाने के लिए नेविगेशन
+  if (next) {
+    const nav = el('nav', { className: 'nav' }, link(`#/${next.id}`, 'Next \u2192'));
+    out.push(nav);
+  }
+  
   app.lang = lang;
   app.replaceChildren(...out);
 }
