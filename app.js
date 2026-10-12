@@ -21,7 +21,7 @@ let currentAppState = 'NOTES';
 let currentSkill = null;
 let playgroundFiles = { html: '', css: '', js: '' };
 let currentFileExt = '';
-let pendingInputResolve = null; // For python input popup
+let pendingInputResolve = null; 
 
 function el(tag, props = {}, ...kids) {
   const n = document.createElement(tag);
@@ -126,9 +126,6 @@ function highlight(code, name) {
   const push = (cls, text) => { if (!cls) { buf += text; return; } flush(); out.append(el('span', { className: 't-' + cls }, text)); };
   const run = (re, pick) => { re.lastIndex = 0; let m; while ((m = re.exec(code))) pick(m, re.lastIndex); flush(); };
   
-  // HTML tags bug fix during live typing
-  const safeCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  
   if (key === 'html') {
     run(HTMLRE, m => push(m[1] ? 'com' : m[2] ? 'tag' : m[3] ? 'str' : m[4] ? 'attr' : '', m[0]));
   } else if (LANGS[key]) {
@@ -160,9 +157,7 @@ function switchAppState(newState) {
       notesView.style.display = 'none';
       editorView.style.display = 'flex';
       outputView.style.display = 'none';
-      // Adjust editor height & lines logic
-      const editorArea = document.getElementById('code-editor');
-      if(editorArea) editorArea.dispatchEvent(new Event('input'));
+      syncEditorLogic();
   } else if (newState === 'OUTPUT') {
       notesView.style.display = 'none';
       editorView.style.display = 'none';
@@ -170,21 +165,26 @@ function switchAppState(newState) {
   }
 }
 
-/* ---------- Editor Utilities ---------- */
+/* ---------- Editor Utilities (Line Number & Highlight Sync) ---------- */
 function syncEditorLogic() {
-  const code = document.getElementById('code-editor').value;
+  const editor = document.getElementById('code-editor');
+  if (!editor) return;
+  const code = editor.value;
   
-  // 1. Line Numbers
+  // Line Numbers Set Up
   const lineNumbers = document.getElementById('line-numbers');
   const linesCount = code.split('\n').length;
-  lineNumbers.innerHTML = Array(linesCount).fill(0).map((_, i) => i + 1).join('<br>');
+  lineNumbers.innerHTML = Array.from({length: linesCount}, (_, i) => i + 1).join('<br>');
   
-  // 2. Syntax Highlighting in background
+  // Syntax Highlight Set Up
   const highlighter = document.getElementById('code-highlighter');
   const langStr = currentFileExt || (currentSkill.language || '').toLowerCase();
   
-  // Emptying and appending DOM fragment
+  // To avoid HTML tag bugs during typing
+  const safeCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
   highlighter.replaceChildren(highlight(code, langStr));
+  syncEditorScroll();
 }
 
 function syncEditorScroll() {
@@ -192,9 +192,11 @@ function syncEditorScroll() {
   const highlighter = document.getElementById('code-highlighter');
   const lineNumbers = document.getElementById('line-numbers');
   
-  highlighter.scrollTop = editor.scrollTop;
-  highlighter.scrollLeft = editor.scrollLeft;
-  lineNumbers.scrollTop = editor.scrollTop;
+  if(highlighter) {
+    highlighter.scrollTop = editor.scrollTop;
+    highlighter.scrollLeft = editor.scrollLeft;
+  }
+  if(lineNumbers) lineNumbers.scrollTop = editor.scrollTop;
 }
 
 /* ---------- Code Execution ---------- */
@@ -253,12 +255,9 @@ async function runCodeAction() {
               },
               inputfun: function(promptText) {
                   return new Promise((resolve) => {
-                      // Print prompt directly to console in the same line
                       consoleEl.textContent += promptText;
-                      // Open Custom Bottom Sheet Input
                       openInputSheet(promptText, resolve);
                   }).then((val) => {
-                      // Once user enters value, append it to console and move to next line
                       consoleEl.textContent += val + "\n";
                       return val;
                   });
@@ -286,9 +285,9 @@ async function runCodeAction() {
           const out = data.run.stdout + (data.run.stderr ? '\n' + data.run.stderr : '');
           consoleEl.textContent = out || '[Program finished]';
           if (data.run.code !== 0 && data.run.stderr) showError("Runtime Error:\n" + data.run.stderr);
-      } else { showError(data.message || 'Execution failed due to an API restriction (Whitelist only).'); consoleEl.textContent = 'Execution Failed.'; }
+      } else { showError(data.message || 'Execution failed due to API restriction.'); consoleEl.textContent = 'Execution Failed.'; }
   } catch (err) {
-      showError('Could not connect to compiler API. Local execution is only supported for HTML, CSS, JS, and Python.');
+      showError('Could not connect to compiler API.');
       consoleEl.textContent = 'Connection Error.';
   }
 }
@@ -405,13 +404,24 @@ function showError(msg) {
   document.body.style.overflow = 'hidden';
 }
 
-// Custom Input Prompt Bottom Sheet for Python
+// Custom Input Prompt - UI updated to block autofill
 function openInputSheet(promptMsg, resolveFunc) {
   pendingInputResolve = resolveFunc;
   sheet.classList.add('short');
   document.getElementById('sheet-title').innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 17l6-6-6-6M12 19h8"></path></svg> <span>Input Required</span>`;
   
-  const inputBox = el('input', { type: 'text', className: 'input-prompt-box', placeholder: 'Type your input here...' });
+  // Blocking browser auto-fills and password managers
+  const inputBox = el('input', { 
+      type: 'text', 
+      className: 'input-prompt-box', 
+      autocomplete: 'off',
+      autocorrect: 'off',
+      spellcheck: 'false',
+      'data-lpignore': 'true',
+      'data-1p-ignore': 'true'
+  });
+  inputBox.value = ''; // Ensure blank box
+  
   const submitBtn = el('button', { className: 'input-prompt-btn' }, 'Submit');
   
   submitBtn.onclick = () => {
@@ -424,17 +434,15 @@ function openInputSheet(promptMsg, resolveFunc) {
       if(e.key === 'Enter') submitBtn.onclick();
   });
   
-  sheetBody.replaceChildren(
-      el('div', { className: 'input-prompt-label' }, promptMsg),
-      inputBox,
-      submitBtn
-  );
+  // Label for prompt string
+  const promptLabel = el('div', { className: 'input-prompt-label' }, promptMsg);
+  
+  sheetBody.replaceChildren(promptLabel, inputBox, submitBtn);
   
   backdrop.hidden = false;
   sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
   
-  // Auto focus input after small delay for animation
   setTimeout(() => inputBox.focus(), 300);
 }
 
@@ -444,9 +452,8 @@ function closeSheet() {
   backdrop.hidden = true; document.body.style.overflow = '';
   if (lastFocus) lastFocus.focus();
   
-  // If user closed sheet without answering input
   if(pendingInputResolve) {
-      pendingInputResolve("");
+      pendingInputResolve(""); // Python handles empty string error appropriately
       pendingInputResolve = null;
   }
 }
@@ -575,7 +582,6 @@ async function chapter(id) {
   const highlighter = el('pre', { id: 'code-highlighter' });
   const lineNumbers = el('div', { id: 'line-numbers' });
 
-  // Sync Logics
   editorArea.addEventListener('input', e => {
       if(isHTML) playgroundFiles[currentFileExt] = e.target.value;
       syncEditorLogic();
@@ -625,9 +631,7 @@ async function chapter(id) {
   app.lang = lang;
   app.replaceChildren(notesView, playgroundView);
   
-  // Initial Sync Editor
-  setTimeout(syncEditorLogic, 10);
-  
+  setTimeout(syncEditorLogic, 10); // Start Line Sync
   updateHeader(false, currentSkill);
 }
 
