@@ -56,19 +56,11 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: none; }
 
 main { max-width: 720px; margin: 0 auto; padding: 24px 20px 80px; }
 
-/* चैप्टर हेडर: टाइटल और बैज एक साथ */
-.chapter-header { display: flex; justify-content: space-between; align-items: center; margin: 8px 0 16px; gap: 16px; }
-.chapter-header h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+/* चैप्टर हेडर: टाइटल और बैज एक साथ (हाइट/मार्जिन कम किया गया है) */
+.chapter-header { display: flex; justify-content: space-between; align-items: flex-start; margin: 0 0 6px; gap: 16px; }
+.chapter-header h1 { margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.2; }
 
 h2 { font-size: 20px; font-weight: 700; margin: 0 0 12px; color: var(--ink); }
-
-/* सर्च बॉक्स */
-input[type=search] {
-  width: 100%; padding: 14px 18px; margin: 12px 0 24px; border: 1px solid var(--line);
-  border-radius: 12px; background: var(--card); color: var(--ink); font-size: 15px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.02); transition: border-color 0.2s;
-}
-input[type=search]:focus { border-color: var(--accent); }
 
 /* लिस्ट आइटम */
 .list { display: grid; gap: 14px; }
@@ -78,8 +70,11 @@ input[type=search]:focus { border-color: var(--accent); }
   box-shadow: 0 1px 3px rgba(0,0,0,0.02); transition: transform 0.2s, box-shadow 0.2s;
 }
 .item:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.06); border-color: #cbd5e1; }
-.item b { display: block; font-size: 18px; margin-bottom: 4px; }
-.desc { font-size: 14.5px; color: var(--muted); margin: 0 0 12px; line-height: 1.5; }
+/* इंडेक्स आइटम हेडर (क्लास को राइट में लाने के लिए) */
+.item-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+.item-header b { font-size: 18px; margin: 0; line-height: 1.3; }
+.item-header .badges { margin-top: 0; flex-shrink: 0; }
+.desc { font-size: 14.5px; color: var(--muted); margin: 0; line-height: 1.5; }
 
 /* बैज */
 .badges { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -90,7 +85,8 @@ input[type=search]:focus { border-color: var(--accent); }
 .thin-line { border: 0; border-top: 1px solid var(--line); margin: 24px 0; }
 .qa .thin-line { margin: 0 0 28px 0; }
 
-.summary { font-size: 17px; margin: 12px 0 24px; color: var(--muted); }
+/* समरी (टाइटल के ठीक नीचे, मार्जिन कम किया गया है) */
+.summary { font-size: 16.5px; margin: 6px 0 24px; color: var(--muted); }
 .sec, .qa { margin: 0 0 36px; }
 .sec p, .qa p { margin: 8px 0; font-size: 16px; }
 ul, ol { padding-left: 24px; margin: 8px 0; }
@@ -104,6 +100,7 @@ table { width: 100%; border-collapse: collapse; text-align: left; }
 th, td { padding: 12px 16px; border-bottom: 1px solid var(--line); }
 th { background: var(--bg); font-weight: 600; }
 tr:last-child td { border-bottom: none; }
+u { text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--muted); }
 
 /* कोड बॉक्स */
 .code { background: #0f172a; border-radius: 12px; margin: 16px 0; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
@@ -124,11 +121,11 @@ tr:last-child td { border-bottom: none; }
 .nav a:hover { transform: translateX(2px); }
 .muted { color: var(--muted); }
 
-/* बॉटम शीट (Short and Normal) */
+/* बॉटम शीट */
 #backdrop { position: fixed; inset: 0; z-index: 19; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); }
 #sheet { position: fixed; left: 50%; bottom: 0; z-index: 20; display: flex; flex-direction: column; width: 100%; max-width: 640px; height: 50vh; background: var(--card); border-radius: var(--sheet-radius) var(--sheet-radius) 0 0; transform: translate(-50%, 100%); visibility: hidden; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -4px 20px rgba(0,0,0,0.1);}
 #sheet.open { transform: translate(-50%, 0); visibility: visible; }
-#sheet.short { height: auto; max-height: 50vh; padding-bottom: 24px; } /* छोटा शीट */
+#sheet.short { height: auto; max-height: 50vh; padding-bottom: 24px; } 
 
 .sheet-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--line); }
 .sheet-head h3 { margin: 0; font-size: 18px; font-weight: 700; }
