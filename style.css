@@ -129,27 +129,21 @@ u { text-decoration: underline; text-underline-offset: 3px; text-decoration-colo
 #code-editor.with-tabs { border-radius: 0 0 12px 12px; }
 #output-console { flex: 1; background: #000; color: #10b981; font-family: 'Fira Code', monospace; font-size: 14px; padding: 16px; border-radius: 12px; overflow-y: auto; white-space: pre-wrap; margin: 0; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); }
 
-/* --- Error Popup (Modal) --- */
-#error-backdrop { position: fixed; inset: 0; z-index: 49; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); visibility: hidden; opacity: 0; transition: 0.2s; }
-#error-backdrop.show { visibility: visible; opacity: 1; }
-#error-popup { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -45%) scale(0.95); z-index: 50; background: var(--card); border-radius: 16px; padding: 24px; width: 90%; max-width: 420px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); visibility: hidden; opacity: 0; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); border: 1px solid var(--line); }
-#error-popup.show { visibility: visible; opacity: 1; transform: translate(-50%, -50%) scale(1); }
-.err-title { color: #ef4444; font-weight: 800; font-size: 18px; margin: 0 0 12px; display: flex; align-items: center; gap: 8px; }
-.err-msg { color: var(--ink); font-size: 15px; margin: 0 0 24px; line-height: 1.6; max-height: 200px; overflow-y: auto; font-family: 'Fira Code', monospace; background: var(--bg); padding: 12px; border-radius: 8px; border: 1px solid var(--line); white-space: pre-wrap;}
-.err-close { background: var(--bg); border: 1px solid var(--line); padding: 10px 16px; border-radius: 8px; cursor: pointer; width: 100%; font-weight: 700; color: var(--ink); font-size: 15px; transition: background 0.2s;}
-.err-close:hover { background: #e2e8f0; }
-
-/* बॉटम शीट */
+/* बॉटम शीट (Including Error Message Styling) */
 #backdrop { position: fixed; inset: 0; z-index: 19; background: rgba(0,0,0,0.5); backdrop-filter: blur(2px); }
 #sheet { position: fixed; left: 50%; bottom: 0; z-index: 20; display: flex; flex-direction: column; width: 100%; max-width: 640px; height: 50vh; background: var(--card); border-radius: var(--sheet-radius) var(--sheet-radius) 0 0; transform: translate(-50%, 100%); visibility: hidden; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 -4px 20px rgba(0,0,0,0.1);}
 #sheet.open { transform: translate(-50%, 0); visibility: visible; }
 #sheet.short { height: auto; max-height: 50vh; padding-bottom: 24px; } 
 
 .sheet-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--line); }
-.sheet-head h3 { margin: 0; font-size: 18px; font-weight: 700; }
+.sheet-head h3 { margin: 0; font-size: 18px; font-weight: 700; transition: color 0.2s; }
 #sheet-close { width: 36px; height: 36px; border: none; border-radius: 50%; background: var(--bg); color: var(--ink); font-size: 14px; cursor: pointer; transition: background 0.2s;}
 #sheet-close:hover { background: #e2e8f0; }
 #sheet-body { flex: 1; overflow-y: auto; padding: 16px 24px calc(10px + env(safe-area-inset-bottom, 0px)); }
+
+/* एरर मैसेज बॉक्स की स्टाइलिंग (पॉपअप के अंदर) */
+.err-msg { color: #ef4444; font-size: 14.5px; font-family: 'Fira Code', monospace; background: #fef2f2; padding: 16px; border-radius: 12px; border: 1px solid #fca5a5; white-space: pre-wrap; line-height: 1.6; margin: 0; overflow-x: auto; }
+@media (prefers-color-scheme: dark) { .err-msg { background: #450a0a; border-color: #7f1d1d; color: #fca5a5; } }
 
 .lang-opts { display: flex; flex-direction: column; gap: 10px; }
 .lang-opt { padding: 16px 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 16px; font-weight: 600; text-align: left; cursor: pointer; transition: all 0.2s;}
