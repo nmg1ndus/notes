@@ -328,8 +328,8 @@ function updateHeader(isIndex, s = null) {
       const btnCode = el('button', { className: currentAppState !== 'NOTES' ? 'active' : '' }, exName);
       btnNotes.onclick = () => switchAppState('NOTES');
       btnCode.onclick = () => switchAppState('EDITOR');
-      left.replaceChildren(backBtn, el('div', { className: 'header-slider' }, btnNotes, btnCode));
-    } else { left.replaceChildren(backBtn, el('span', { className: 'brand' }, 'Vyut Notes')); }
+      left.replaceChildren(el('a', { href: '#/', className: 'brand' }, el('img', { src: 'logo.png', alt: 'Vyut Notes', className: 'brand-logo' })));
+    } else { left.replaceChildren(backBtn, el('a', { href: '#/', className: 'brand' }, el('img', { src: 'logo.png', alt: 'Vyut Notes', className: 'brand-logo' }))); }
   }
 
   if (isIndex || currentAppState === 'NOTES') {
