@@ -69,13 +69,13 @@ function formatText(str) {
   if (typeof str !== 'string') return str;
   let html = str
     .replace(/\\n/g, '\n')
-    .replace(/\/n(?!o\b|otes\b)/g, '\n') // '/n' को नई लाइन में बदलने के लिए
+    .replace(/\/n(?!o\b|otes\b)/g, '\n')
     .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
     .replace(/\*([^*]+)\*/g, '<i>$1</i>')
     .replace(/__([^_]+)__/g, '<u>$1</u>')
-    .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
-    .replace(/(^|[\s(])'([^'\n]+)'(?=[\s.,!?)\]]|$)/g, '$1<code class="inline-code">$2</code>');
-
+    .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+    // यहाँ से सिंगल कोट्स (' ') वाला लॉजिक हटा दिया गया है
+    
   if (html.includes('|')) {
     const lines = html.split('\n');
     let result = [], inTable = false, tableHtml = '';
