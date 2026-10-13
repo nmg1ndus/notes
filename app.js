@@ -68,12 +68,14 @@ function loadScript(src) {
 function formatText(str) {
   if (typeof str !== 'string') return str;
   let html = str
+    .replace(/\\n/g, '\n')
+    .replace(/\/n(?!o\b|otes\b)/g, '\n') // '/n' को नई लाइन में बदलने के लिए
     .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
     .replace(/\*([^*]+)\*/g, '<i>$1</i>')
     .replace(/__([^_]+)__/g, '<u>$1</u>')
     .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
     .replace(/(^|[\s(])'([^'\n]+)'(?=[\s.,!?)\]]|$)/g, '$1<code class="inline-code">$2</code>');
-    
+
   if (html.includes('|')) {
     const lines = html.split('\n');
     let result = [], inTable = false, tableHtml = '';
@@ -91,7 +93,9 @@ function formatText(str) {
       }
     }
     if (inTable) result.push(tableHtml + '</table></div>');
-    html = result.join('\n');
+    html = result.join('\n').replace(/<\/div>\n/g, '</div>').replace(/\n<div/g, '<div').replace(/\n/g, '<br>');
+  } else {
+    html = html.replace(/\n/g, '<br>');
   }
   return html;
 }
@@ -562,7 +566,7 @@ async function chapter(id) {
     (d.questions || []).forEach((q, n) => {
       const box = el('article', { className: 'qa' });
       if (n > 0) box.append(el('hr', { className: 'thin-line' })); 
-      box.append(richText('h2', {}, `${n + 1}. ${q.q}`));
+      box.append(richText('h2', {}, q.q));
       [].concat(q.answer || []).forEach(p => box.append(richText('p', {}, p)));
       if (s.programming && q.code) box.append(codeBox(q.language || s.language, q.code, q.q, q.algorithm));
       out.push(box);
