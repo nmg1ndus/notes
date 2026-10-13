@@ -318,18 +318,30 @@ function updateHeader(isIndex, s = null) {
   const oldBrand = headerTop.querySelector('.brand:not(#header-left .brand)');
   if (oldBrand) oldBrand.remove();
 
+  // लोगो बनाने का फंक्शन (अपनी फाइल का नाम यहाँ जांच लें, जैसे logo.png)
+  const makeLogo = () => el('a', { href: '#/', className: 'brand' }, 
+    el('img', { src: 'logo.png', alt: 'Vyut Notes', className: 'brand-logo' })
+  );
+
   if (isIndex) {
-    left.replaceChildren(el('a', { href: '#/', className: 'brand' }, 'Vyut Notes'));
+    // 1. इंडेक्स पेज: केवल लोगो दिखेगा
+    left.replaceChildren(makeLogo());
   } else {
+    // 2. नोट्स पेज: बैक बटन हमेशा रहेगा
     const backBtn = el('a', { href: '#/', className: 'back-btn', 'aria-label': 'Go back' }, icon('M15 18l-6-6 6-6'));
+    
     if (s && s.programming) {
+      // अगर प्रोग्रामिंग (Python/HTML) है, तो बैक बटन + Notes/Interpreter स्लाइडर दिखेगा
       const exName = (s.execution && EXEC[s.execution]) ? EXEC[s.execution][0] : 'Compiler';
       const btnNotes = el('button', { className: currentAppState === 'NOTES' ? 'active' : '' }, 'Notes');
       const btnCode = el('button', { className: currentAppState !== 'NOTES' ? 'active' : '' }, exName);
       btnNotes.onclick = () => switchAppState('NOTES');
       btnCode.onclick = () => switchAppState('EDITOR');
-      left.replaceChildren(el('a', { href: '#/', className: 'brand' }, el('img', { src: 'logo.png', alt: 'Vyut Notes', className: 'brand-logo' })));
-    } else { left.replaceChildren(backBtn, el('a', { href: '#/', className: 'brand' }, el('img', { src: 'logo.png', alt: 'Vyut Notes', className: 'brand-logo' }))); }
+      left.replaceChildren(backBtn, el('div', { className: 'header-slider' }, btnNotes, btnCode));
+    } else {
+      // अगर बिना प्रोग्रामिंग वाला थ्योरी चैप्टर है, तो बैक बटन + लोगो दिखेगा
+      left.replaceChildren(backBtn, makeLogo());
+    }
   }
 
   if (isIndex || currentAppState === 'NOTES') {
