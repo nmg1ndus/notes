@@ -2,6 +2,14 @@
   "summary": "Solutions for the exercises at the end of the chapter 'More on Python Programming Language', including theoretical questions and detailed lab activity algorithms and code.",
   "questions": [
     {
+      "q": "Program",
+      "answer": "A program is an implementation of an algorithm written in a specific programming language (such as Python, C++, or Java) that a computer can directly read, interpret, and execute."
+    },
+    {
+      "q": "Algorithm",
+      "answer": "An algorithm is a finite sequence of well-defined, step-by-step instructions or rules designed to solve a specific program or perform a particular task. Think of it as a logical recipe or blueprint before any code is written."
+    },
+    {
       "q": "1. Fill in the blanks: (a)",
       "answer": "Keywords are **predefined** words that have specific meanings and purposes."
     },
