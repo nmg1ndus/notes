@@ -1,11 +1,11 @@
 {
   "title": {
-    "en": "Python Programming",
-    "hi": "पायथन प्रोग्रामिंग"
+    "en": "More on Python Programming Language",
+    "hi": "पायथन प्रोग्रामिंग भाषा के बारे में और अधिक जानकारी"
   },
   "description": {
-    "en": "Learn the basics of Python programming.",
-    "hi": "पायथन प्रोग्रामिंग के बेसिक्स सीखें।"
+    "en": "Learn the basics and advanced of Python programming Language.",
+    "hi": "पायथन प्रोग्रामिंग लैंग्वेज के बेसिक्स और एडवांस सीखें।"
   },
   "class": "8",
   "programming": true,
