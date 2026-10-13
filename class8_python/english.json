@@ -51,7 +51,7 @@
     },
     {
       "q": "3. Answer the following questions: (c)",
-      "answer": "**State the difference between the append() and extend().** /n The `append()` method accepts only one parameter and adds it at the end of the list. The `extend()` method accepts a list of elements and adds them at the end of the list, even allowing you to add another list."
+      "answer": "**State the difference between the append() and extend().** /n The `append()` method accepts only one parameter and adds it at the end of the list. The `extend()` method accepts a list of elements and adds them at the end of the list, even allowing you to add another list. For example, `list1 = [1, 2]`: `list1.append([3, 4])` gives `[1, 2, [3, 4]]` (the list is added as a single item), while `list1.extend([3, 4])` gives `[1, 2, 3, 4]` (each element is added separately)."
     },
     {
       "q": "3. Answer the following questions: (d)",
@@ -87,7 +87,7 @@
     },
     {
       "q": "Lab Activity 1: (b)",
-      "answer": "**for x in range(5): for y in range(6): print() print(x, end='')** /n Taken literally from the source indentation, it prints 6 blank lines followed by 0, then 6 blank lines followed by 1, up to 4. Assuming the standard matrix pattern was intended (placing `print(x, end='')` inside the inner loop), it would output rows: \n000000\n111111\n222222\n333333\n444444"
+      "answer": "**for x in range(5): for y in range(6): print(x, end='') print()** /n The inner loop prints the value of x six times on the same line (because of end=''). After the inner loop finishes, the outer-level print() moves the cursor to the next line. So each row repeats x six times: \n000000\n111111\n222222\n333333\n444444"
     },
     {
       "q": "Lab Activity 1: (c)",
@@ -96,7 +96,7 @@
     {
       "q": "Lab Activity 2:",
       "answer": "**Write a python program to read three numbers and print them in ascending order.** /n Python program to sort three numbers taken from user input.",
-      "code": "numbers = []\nfor i in range(3):\n    num = float(input(f\"Enter number {i+1}: \"))\n    numbers.append(num)\nnumbers.sort()\nprint(\"Numbers in ascending order:\", numbers)",
+      "code": "numbers = []\nfor i in range(3):\n    num = int(input(f\"Enter number {i+1}: \"))\n    numbers.append(num)\nnumbers.sort()\nprint(\"Numbers in ascending order:\", numbers)",
       "algorithm": [
         "Start",
         "Create an empty list named 'numbers'",
@@ -137,19 +137,19 @@
     {
       "q": "Lab Activity 5:",
       "answer": "**Print the following number pattern using Python range() and for loop. (Descending 5s to 1)** /n Nested loop program utilizing Python range() decrement to produce the number pattern.",
-      "code": "for i in range(5, 0, -1):\n    for j in range(i):\n        print(i, end=\"\")\n    print()",
+      "code": "for i in range(5, 0, -1):\n    for j in range(i):\n        print(i, end=\" \")\n    print()",
       "algorithm": [
         "Start",
         "Initialize an outer for loop with variable 'i' iterating from 5 down to 1 using range(5, 0, -1)",
         "Inside the outer loop, initialize an inner for loop with variable 'j' iterating based on 'i' using range(i)",
-        "In the inner loop, print the value of 'i' and keep the cursor on the same line using end=\"\"",
+        "In the inner loop, print the value of 'i' and keep the cursor on the same line with a space after it using end=\" \"",
         "Outside the inner loop, print an empty string to move to the next line",
         "Stop"
       ]
     },
     {
       "q": "Lab Activity 6:",
-      "answer": "**Find the output of the following codes:** /n  **a. colors = [\"red\", \"green\"] ...** /n ['red', 'green']\n['yellow', 'red', 'green']\n['yellow', 'red', 'blue', 'green'] /n **b. num=int(input(\"enter a number\")) ...** /n Assuming user enters 5:\nenter a number 5\nfactorial of 5 is 120"
+      "answer": "**Find the output of the following codes:** /n  **a. colors = [\"red\", \"green\"] ...** /n ['red', 'green']\n['yellow', 'red', 'green']\n['yellow', 'red', 'blue', 'green'] /n **b. num=int(input(\"enter a number\")) ...** /n Assuming user enters 5:\nenter a number5\nfactorial of 5 is 120"
     },
     {
       "q": "Lab Activity 7:",
