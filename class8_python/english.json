@@ -2,100 +2,100 @@
   "summary": "Solutions for the exercises at the end of the chapter 'More on Python Programming Language', including theoretical questions and detailed lab activity algorithms and code.[cite: 16, 17]",
   "questions": [
     {
-      "q": "1. Fill in the blanks: (a) /n Keywords are _______ words that have specific meanings and purposes.",
+      "q": "1. Fill in the blanks: (a)",
       "answer": "Keywords are **predefined** words that have specific meanings and purposes."
     },
     {
-      "q": "1. Fill in the blanks: (b) /n _______ is an open-source library used to analyse and manipulate large sets of data.",
+      "q": "1. Fill in the blanks: (b)",
       "answer": "**Pandas** is an open-source library used to analyse and manipulate large sets of data."
     },
     {
-      "q": "1. Fill in the blanks: (c) /n _______ is a name that is used to refer to memory location.",
+      "q": "1. Fill in the blanks: (c)",
       "answer": "A **Variable** is a name that is used to refer to memory location."
     },
     {
-      "q": "1. Fill in the blanks: (d) /n The _______ function is used to generate a sequence of numbers over time.",
+      "q": "1. Fill in the blanks: (d)",
       "answer": "The **range()** function is used to generate a sequence of numbers over time."
     },
     {
-      "q": "1. Fill in the blanks: (e) /n List are written in _______ brackets.",
+      "q": "1. Fill in the blanks: (e)",
       "answer": "List are written in **square** brackets."
     },
     {
-      "q": "2. Tick (✓) the correct option: (a) /n Which of the following symbol is used to start writing a comment?",
-      "answer": "**iii. #**"
+      "q": "2. Tick (✓) the correct option: (a)",
+      "answer": "Which of the following symbol is used to start writing a comment? /n **iii. #**"
     },
     {
-      "q": "2. Tick (✓) the correct option: (b) /n Which one of the following loop repeatedly executes a block of code until a condition satisfied?",
-      "answer": "**i. While loop**"
+      "q": "2. Tick (✓) the correct option: (b)",
+      "answer": "Which one of the following loop repeatedly executes a block of code until a condition satisfied? /n **i. While loop**"
     },
     {
-      "q": "2. Tick (✓) the correct option: (c) /n Which of the following is used to create graphs and plots for representing data?",
-      "answer": "**ii. Matplotlib**"
+      "q": "2. Tick (✓) the correct option: (c)",
+      "answer": "Which of the following is used to create graphs and plots for representing data? /n **ii. Matplotlib**"
     },
     {
-      "q": "2. Tick (✓) the correct option: (d) /n What is the output of list1 [4], if list1=[15, 11, 8, 9, 1, 5, 4]?",
-      "answer": "**i. 1**"
+      "q": "2. Tick (✓) the correct option: (d)",
+      "answer": "What is the output of list1 [4], if list1=[15, 11, 8, 9, 1, 5, 4]? /n **i. 1**"
     },
     {
-      "q": "2. Tick (✓) the correct option: (e) /n Which built-in function in python adds an item (x) to the end of the list?",
-      "answer": "**ii. Append()**"
+      "q": "2. Tick (✓) the correct option: (e)",
+      "answer": "Which built-in function in python adds an item (x) to the end of the list? /n **ii. Append()**"
     },
     {
-      "q": "3. Answer the following questions: (a) /n What are looping statements? Explain its types.",
-      "answer": "Looping statements are used when we need to run the same code again and again, each time with a different value. In Python, Iteration (Loops) statements are of three types i.e., While Loop, For Loop, and Nested For Loops."
+      "q": "3. Answer the following questions: (a)",
+      "answer": "**What are looping statements? Explain its types.** /n Looping statements are used when we need to run the same code again and again, each time with a different value. In Python, Iteration (Loops) statements are of three types i.e., While Loop, For Loop, and Nested For Loops."
     },
     {
-      "q": "3. Answer the following questions: (b) /n Explain packages with examples.",
-      "answer": "A package is basically a directory with Python files and a file with the name __init__.py. Packages allow you to organise modules in the hierarchical structure. Examples of packages include NumPy, Matplotlib, Pandas, and OpenCV."
+      "q": "3. Answer the following questions: (b)",
+      "answer": "**Explain packages with examples.** /n A package is basically a directory with Python files and a file with the name __init__.py. Packages allow you to organise modules in the hierarchical structure. Examples of packages include NumPy, Matplotlib, Pandas, and OpenCV."
     },
     {
-      "q": "3. Answer the following questions: (c) /n State the difference between the append() and extend().",
-      "answer": "The `append()` method accepts only one parameter and adds it at the end of the list. The `extend()` method accepts a list of elements and adds them at the end of the list, even allowing you to add another list."
+      "q": "3. Answer the following questions: (c)",
+      "answer": "**State the difference between the append() and extend().** /n The `append()` method accepts only one parameter and adds it at the end of the list. The `extend()` method accepts a list of elements and adds them at the end of the list, even allowing you to add another list."
     },
     {
-      "q": "3. Answer the following questions: (d) /n Write a short note on NumPy.",
-      "answer": "NumPy is one of the fundamental packages for Python providing support for large multidimensional arrays and perform calculations on the data stored in them. You can solve algebraic formulas, perform common statistical operations, and much more."
+      "q": "3. Answer the following questions: (d)",
+      "answer": "**Write a short note on NumPy.** /n NumPy is one of the fundamental packages for Python providing support for large multidimensional arrays and perform calculations on the data stored in them. You can solve algebraic formulas, perform common statistical operations, and much more."
     },
     {
-      "q": "3. Answer the following questions: (e) /n What is a list in Python? Give two features of lists.",
-      "answer": "A list in Python is used to store the sequence of various types of data. It can be defined as a collection of values or items of different types enclosed in square brackets [].Features include: 1. The lists are ordered. 2. The element of the list can access by index. 3. The lists are the mutable type."
+      "q": "3. Answer the following questions: (e)",
+      "answer": "**What is a list in Python? Give two features of lists.** /n A list in Python is used to store the sequence of various types of data. It can be defined as a collection of values or items of different types enclosed in square brackets [].Features include: /n 1. The lists are ordered. /n 2. The element of the list can access by index. /n 3. The lists are the mutable type."
     },
     {
-      "q": "4. Write 'T' for True and 'F' for False statements: (a) /n Variable is a reserved memory location to store values.",
-      "answer": "**T**"
+      "q": "4. Write 'T' for True and 'F' for False statements: (a)",
+      "answer": "Variable is a reserved memory location to store values. /n **T**"
     },
     {
-      "q": "4. Write 'T' for True and 'F' for False statements: (b) /n The \"elif\" statement is used to check multiple conditions only if the given condition is false.",
-      "answer": "**T**"
+      "q": "4. Write 'T' for True and 'F' for False statements: (b)",
+      "answer": "The \"elif\" statement is used to check multiple conditions only if the given condition is false. /n **T**"
     },
     {
-      "q": "4. Write 'T' for True and 'F' for False statements: (c) /n The insert() method is used to add an item at the specified position in the list.",
-      "answer": "**T**"
+      "q": "4. Write 'T' for True and 'F' for False statements: (c)",
+      "answer": "The insert() method is used to add an item at the specified position in the list. /n **T**"
     },
     {
-      "q": "4. Write 'T' for True and 'F' for False statements: (d) /n NumPy is an open-source library used to analyse and manipulate large sets of data.",
-      "answer": "**F** (This describes Pandas. NumPy provides support for large multidimensional arrays and performs calculations)."
+      "q": "4. Write 'T' for True and 'F' for False statements: (d)",
+      "answer": "NumPy is an open-source library used to analyse and manipulate large sets of data. /n **F** (This describes Pandas. NumPy provides support for large multidimensional arrays and performs calculations)."
     },
     {
-      "q": "4. Write 'T' for True and 'F' for False statements: (e) /n The items in the list are with the parentheses ().",
-      "answer": "**F** (Items in a list are enclosed with square brackets [])."
+      "q": "4. Write 'T' for True and 'F' for False statements: (e)",
+      "answer": "The items in the list are with the parentheses (). /n **F** (Items in a list are enclosed with square brackets [])."
     },
     {
-      "q": "Lab Activity 1: Run the following programs in Python and write its output. (a) /n for x in range (2,6): print(x) else: print('Out of for loop')",
-      "answer": "2\n3\n4\n5\nOut of for loop"
+      "q": "Lab Activity 1: (a)",
+      "answer": "**for x in range (2,6): print(x) else: print('Out of for loop')** \n 2\n3\n4\n5\nOut of for loop"
     },
     {
-      "q": "Lab Activity 1: Run the following programs in Python and write its output. (b) /n for x in range(5): for y in range(6): print() print(x, end='')",
-      "answer": "Taken literally from the source indentation, it prints 6 blank lines followed by 0, then 6 blank lines followed by 1, up to 4. Assuming the standard matrix pattern was intended (placing `print(x, end='')` inside the inner loop), it would output rows: \n000000\n111111\n222222\n333333\n444444"
+      "q": "Lab Activity 1: (b)",
+      "answer": "**for x in range(5): for y in range(6): print() print(x, end='')** /n Taken literally from the source indentation, it prints 6 blank lines followed by 0, then 6 blank lines followed by 1, up to 4. Assuming the standard matrix pattern was intended (placing `print(x, end='')` inside the inner loop), it would output rows: \n000000\n111111\n222222\n333333\n444444"
     },
     {
-      "q": "Lab Activity 1: Run the following programs in Python and write its output. c. myset = {'python', 'programming', 'examples'} for x in myset: print(x)",
-      "answer": "python\nprogramming\nexamples\n*(Note: Output order may vary as sets are unordered data types)*[cite: 17]"
+      "q": "Lab Activity 1: (c)",
+      "answer": "**myset = {'python', 'programming', 'examples'} for x in myset: print(x)** \n python\nprogramming\nexamples\n*(Note: Output order may vary as sets are unordered data types)*"
     },
     {
-      "q": "Lab Activity 2: Write a python program to read three numbers and print them in ascending order.",
-      "answer": "Python program to sort three numbers taken from user input.[cite: 17]",
+      "q": "Lab Activity 2:",
+      "answer": "**Write a python program to read three numbers and print them in ascending order.** /n Python program to sort three numbers taken from user input.",
       "code": "numbers = []\nfor i in range(3):\n    num = float(input(f\"Enter number {i+1}: \"))\n    numbers.append(num)\nnumbers.sort()\nprint(\"Numbers in ascending order:\", numbers)",
       "algorithm": [
         "Start",
@@ -108,8 +108,8 @@
       ]
     },
     {
-      "q": "Lab Activity 3: Write a python program to check whether a given number is odd or even.",
-      "answer": "Python program using modulo operator to check odd/even condition.[cite: 17]",
+      "q": "Lab Activity 3:",
+      "answer": "**Write a python program to check whether a given number is odd or even.** /n Python program using modulo operator to check odd/even condition.",
       "code": "num = int(input(\"Enter a number: \"))\nif num % 2 == 0:\n    print(num, \"is an even number.\")\nelse:\n    print(num, \"is an odd number.\")",
       "algorithm": [
         "Start",
@@ -121,8 +121,8 @@
       ]
     },
     {
-      "q": "Lab Activity 4: Write a program to calculate simple interest.",
-      "answer": "Python program to apply the simple interest mathematical formula.[cite: 17]",
+      "q": "Lab Activity 4:",
+      "answer": "**Write a program to calculate simple interest.** /n Python program to apply the simple interest mathematical formula.",
       "code": "p = float(input(\"Enter Principal amount: \"))\nr = float(input(\"Enter Rate of interest: \"))\nt = float(input(\"Enter Time (in years): \"))\nsi = (p * r * t) / 100\nprint(\"The Simple Interest is:\", si)",
       "algorithm": [
         "Start",
@@ -135,8 +135,8 @@
       ]
     },
     {
-      "q": "Lab Activity 5: Print the following number pattern using Python range() and for loop. (Descending 5s to 1)",
-      "answer": "Nested loop program utilizing Python range() decrement to produce the number pattern.[cite: 17]",
+      "q": "Lab Activity 5:",
+      "answer": "**Print the following number pattern using Python range() and for loop. (Descending 5s to 1)** /n Nested loop program utilizing Python range() decrement to produce the number pattern.",
       "code": "for i in range(5, 0, -1):\n    for j in range(i):\n        print(i, end=\"\")\n    print()",
       "algorithm": [
         "Start",
@@ -148,16 +148,12 @@
       ]
     },
     {
-      "q": "Lab Activity 6: Find the output of the following codes: a. colors = [\"red\", \"green\"] ...",
-      "answer": "['red', 'green']\n['yellow', 'red', 'green']\n['yellow', 'red', 'blue', 'green'][cite: 17]"
+      "q": "Lab Activity 6:",
+      "answer": "**Find the output of the following codes:** /n  **a. colors = [\"red\", \"green\"] ...** /n ['red', 'green']\n['yellow', 'red', 'green']\n['yellow', 'red', 'blue', 'green'] /n **b. num=int(input(\"enter a number\")) ...** /n Assuming user enters 5:\nenter a number 5\nfactorial of 5 is 120"
     },
     {
-      "q": "Lab Activity 6: Find the output of the following codes: b. num=int(input(\"enter a number\")) ...",
-      "answer": "Assuming user enters 5:\nenter a number 5\nfactorial of 5 is 120[cite: 17]"
-    },
-    {
-      "q": "Lab Activity 7: Write a program to find the whether a number is prime or not using 'while' loop.",
-      "answer": "Python program implementing a while loop to test for prime divisors.[cite: 17]",
+      "q": "Lab Activity 7:",
+      "answer": "**Write a program to find the whether a number is prime or not using 'while' loop.** /n Python program implementing a while loop to test for prime divisors.",
       "code": "num = int(input(\"Enter a number: \"))\nif num <= 1:\n    print(num, \"is not a prime number.\")\nelse:\n    i = 2\n    is_prime = True\n    while i < num:\n        if num % i == 0:\n            is_prime = False\n            break\n        i += 1\n    if is_prime:\n        print(num, \"is a prime number.\")\n    else:\n        print(num, \"is not a prime number.\")",
       "algorithm": [
         "Start",
@@ -172,8 +168,8 @@
       ]
     },
     {
-      "q": "Lab Activity 8: Write a program to display the maximum and minimum of two numbers.",
-      "answer": "Python conditional program to evaluate minimum and maximum parameters.[cite: 17]",
+      "q": "Lab Activity 8:",
+      "answer": "**Write a program to display the maximum and minimum of two numbers.** /n Python conditional program to evaluate minimum and maximum parameters.",
       "code": "num1 = float(input(\"Enter the first number: \"))\nnum2 = float(input(\"Enter the second number: \"))\nif num1 > num2:\n    print(\"Maximum:\", num1)\n    print(\"Minimum:\", num2)\nelif num2 > num1:\n    print(\"Maximum:\", num2)\n    print(\"Minimum:\", num1)\nelse:\n    print(\"Both numbers are equal.\")",
       "algorithm": [
         "Start",
@@ -188,8 +184,8 @@
       ]
     },
     {
-      "q": "VALUE BASED QUESTIONS: Write a program to calculate total selling price after levying the GST. Calculate central govt. GST and state govt. GST rates...",
-      "answer": "Python script computing proper tax breakdowns based on merchandise condition slabs.[cite: 17]",
+      "q": "VALUE BASED QUESTIONS:",
+      "answer": "**Write a program to calculate total selling price after levying the GST. Calculate central govt. GST and state govt. GST rates...** /n Python script computing proper tax breakdowns based on merchandise condition slabs.",
       "code": "item_category = input(\"Enter item category (Footwear/Apparels): \").lower()\nprice = float(input(\"Enter price per item/pair: \"))\n\ngst_percent = 0\nif item_category == \"footwear\":\n    if price <= 500:\n        gst_percent = 5\n    else:\n        gst_percent = 18\nelif item_category == \"apparels\":\n    if price <= 1000:\n        gst_percent = 5\n    else:\n        gst_percent = 12\nelse:\n    print(\"Invalid Category entered.\")\n\nif gst_percent > 0:\n    cgst_rate = gst_percent / 2\n    sgst_rate = gst_percent / 2\n    tax_amount = (price * gst_percent) / 100\n    total_price = price + tax_amount\n    print(f\"CGST ({cgst_rate}%): {(price * cgst_rate) / 100}\")\n    print(f\"SGST ({sgst_rate}%): {(price * sgst_rate) / 100}\")\n    print(\"Total Selling Price:\", total_price)",
       "algorithm": [
         "Start",
