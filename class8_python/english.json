@@ -103,15 +103,15 @@
     },
     {
       "q": "Lab Activity 2:",
-      "answer": "**Write a python program to read three numbers and print them in ascending order.** /n Python program to sort three numbers taken from user input.",
-      "code": "numbers = []\nfor i in range(3):\n    num = int(input(f\"Enter number {i+1}: \"))\n    numbers.append(num)\nnumbers.sort()\nprint(\"Numbers in ascending order:\", numbers)",
+      "answer": "**Write a python program to read three numbers and print them in ascending order.** \n Python program to sort three numbers taken from user input using if-elif-else.",
+      "code": "num1 = int(input(\"Enter number 1: \"))\nnum2 = int(input(\"Enter number 2: \"))\nnum3 = int(input(\"Enter number 3: \"))\n\nif num1 <= num2 and num1 <= num3:\n    if num2 <= num3:\n        print(\"Numbers in ascending order:\", num1, num2, num3)\n    else:\n        print(\"Numbers in ascending order:\", num1, num3, num2)\nelif num2 <= num1 and num2 <= num3:\n    if num1 <= num3:\n        print(\"Numbers in ascending order:\", num2, num1, num3)\n    else:\n        print(\"Numbers in ascending order:\", num2, num3, num1)\nelse:\n    if num1 <= num2:\n        print(\"Numbers in ascending order:\", num3, num1, num2)\n    else:\n        print(\"Numbers in ascending order:\", num3, num2, num1)",
       "algorithm": [
         "Start",
-        "Create an empty list named 'numbers'",
-        "Run a loop 3 times to read three numbers from the user",
-        "Inside the loop, append each entered number to the 'numbers' list",
-        "Use the sort() method to arrange the list in ascending order",
-        "Print the sorted 'numbers' list",
+        "Read three numbers from the user as num1, num2, and num3",
+        "If num1 is smaller than or equal to both num2 and num3, compare num2 and num3 to determine the exact order",
+        "Else if (elif) num2 is the smallest, compare num1 and num3 to determine the exact order",
+        "Else (num3 is the smallest), compare num1 and num2 to determine the exact order",
+        "Print the numbers in the evaluated ascending order",
         "Stop"
       ]
     },
