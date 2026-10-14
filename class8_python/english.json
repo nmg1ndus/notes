@@ -162,7 +162,7 @@
     {
       "q": "Lab Activity 7:",
       "answer": "**Write a program to find the whether a number is prime or not using 'while' loop.** /n Python program implementing a while loop to test for prime divisors.",
-      "code": "num = int(input("Enter a number: "))/n/ni = 1/ndiv = 0/n/n# Count all the factors from 1 up to that number/nwhile i <= num:/n    if num % i == 0:/n        div = div + 1/n    i = i + 1/n/n# A prime number has exactly 2 factors (1 and itself)/nif div == 2:/n    print(num, "is a Prime Number")/nelif num == 1:/n    print("1 is neither a Prime nor a Composite Number")/nelse:/n    print(num, "is not a Prime Number")",
+      "code": "num = int(input(\"Enter a number: \"))/n/ni = 1/ndiv = 0/n/n# Count all the factors from 1 up to that number/nwhile i <= num:/n    if num % i == 0:/n        div = div + 1/n    i = i + 1/n/n# A prime number has exactly 2 factors (1 and itself)/nif div == 2:/n    print(num, \"is a Prime Number\")/nelif num == 1:/n    print(\"1 is neither a Prime nor a Composite Number\")/nelse:/n    print(num, \"is not a Prime Number\")",
       "algorithm": [
         "Start",
         "Read an integer from the user into variable 'num'",
