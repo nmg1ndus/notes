@@ -319,9 +319,9 @@ function updateHeader(isIndex, s = null) {
     el('img', { src: 'logo.png', alt: 'Vyut Notes', className: 'brand-logo' })
   );
 
-  if (isIndex) {
-    left.replaceChildren(makeLogo());
-  } else {
+    if (isIndex) {
+    left.replaceChildren(el('a', { href: '#/', className: 'brand' }, el('img', { src: 'logo.png', alt: 'Vyut Notes', className: 'brand-logo' })));
+    } else {
     const backBtn = el('a', { href: '#/', className: 'back-btn', 'aria-label': 'Go back' }, icon('M15 18l-6-6 6-6'));
     if (s && s.programming) {
       const exName = (s.execution && EXEC[s.execution]) ? EXEC[s.execution][0] : 'Compiler';
