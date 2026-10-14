@@ -109,19 +109,19 @@ function richText(tag, props, text) {
 /* ---------- Syntax Highlighting ---------- */
 const WORDS = s => new Set(s.split(' '));
 const PYSTR = /"""[\s\S]*?"""|'''[\s\S]*?'''|"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'/;
-const CSTR = /"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\])*`/;
+const CSTR = /"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|`(?:\\.|[^`\\\])*`/;
 const CCOM = /\/\/.*|\/\*[\s\S]*?\*\//;
-const CPRE = /\/\/.*|\/\*[\s\S]*?\*\/|^[ \t]*#.*/;
+const CPRE = /\/\/.*|\/\*[\s\S]*?\*\//|^[ \t]*#.*/;
 const mk = (com, str, kw, bi) => ({ re: new RegExp(`(${com.source})|(${str.source})|(\\b\\d+(?:\\.\\d+)?\\b)|([A-Za-z_]\\w*)|([\\s\\S])`, 'gm'), kw: WORDS(kw), bi: WORDS(bi) });
 const LANGS = {
-  python: mk(/#.*/, PYSTR, 'False None True and as assert break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with yield', 'print input int str float len range list dict set tuple type open sum min max abs sorted bool enumerate zip map'),
-  javascript: mk(CCOM, CSTR, 'var let const function return if else for while do switch case break continue new this class extends import export from true false null undefined try catch throw async await typeof', 'console document window Math Array Object JSON String Number'),
-  java: mk(CCOM, CSTR, 'public private protected static final class interface extends implements new return if else for while do switch case break continue void int long double float char boolean byte short true false null try catch throw throws import package this super', 'System String Math Scanner ArrayList'),
-  c: mk(CPRE, CSTR, 'int float double char long short void unsigned signed struct typedef enum const static return if else for while do switch case break continue sizeof NULL', 'printf scanf main malloc free strlen'),
-  cpp: mk(CPRE, CSTR, 'int float double char long short void bool unsigned struct class public private using namespace new delete const static return if else for while do switch case break continue true false', 'cout cin endl std string vector main')
+  python: mk(/#.*/, PYSTR, 'False None True and as assert break class continue def del elif else except finally for from global if import in is lambda nonlocal not or pass raise return try while with [...]',
+  javascript: mk(CCOM, CSTR, 'var let const function return if else for while do switch case break continue new this class extends import export from true false null undefined try catch throw async aw[...]',
+  java: mk(CCOM, CSTR, 'public private protected static final class interface extends implements new return if else for while do switch case break continue void int long double float char boolean byte[...]',
+  c: mk(CPRE, CSTR, 'int float double char long short void unsigned signed struct typedef enum const static return if else for while do switch case break continue sizeof NULL', 'printf scanf main mall[...]',
+  cpp: mk(CPRE, CSTR, 'int float double char long short void bool unsigned struct class public private using namespace new delete const static return if else for while do switch case break continue tr[...]'
 };
 const ALIAS = { py: 'python', js: 'javascript', 'c++': 'cpp', html: 'html' };
-const HTMLRE = /(<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)|(<\/?[A-Za-z][\w:-]*|\/?>)|("[^"]*"|'[^']*')|([A-Za-z_:][\w:.-]*)(?=\s*=)|([\s\S])/gi;
+const HTMLRE = /(<!--[\s\S]*?-->|<!DOCTYPE[^>]*>)|(<\/?[A-Za-z][\w:-]*|\/?&gt;)|("[^"]*"|'[^']*')|([A-Za-z_:][\w:.-]*)(?=\s*=)|([\s\S])/gi;
 
 function highlight(code, name) {
   const raw = (name || '').toLowerCase();
@@ -423,7 +423,7 @@ function openSheet(steps, trigger) {
 
 function showError(msg) {
   sheet.classList.add('short');
-  document.getElementById('sheet-title').innerHTML = `<svg width="20" height="20" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> <span style="color: #ef4444;">Error</span>`;
+  document.getElementById('sheet-title').innerHTML = `<svg width="20" height="20" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><pa[...]`;
   sheetBody.replaceChildren(el('div', { className: 'err-msg-sheet' }, msg));
   backdrop.hidden = false;
   sheet.classList.add('open'); sheet.setAttribute('aria-hidden', 'false');
@@ -435,7 +435,7 @@ function openInputSheet(promptMsg, resolveFunc, rejectFunc) {
   pendingInput = { resolve: resolveFunc, reject: rejectFunc };
   lastFocus = null;
   sheet.classList.add('short');
-  document.getElementById('sheet-title').innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 17l6-6-6-6M12 19h8"></path></svg> <span>Input Required</span>`;
+  document.getElementById('sheet-title').innerHTML = `<svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24[...]`;
 
   const inputBox = el('div', { className: 'input-prompt-box' });
   const probe = document.createElement('div');
@@ -592,11 +592,12 @@ async function chapter(id) {
 
   // --- PLAYGROUND SETUP (Editor & Output) ---
   const isHTML = (s.language || '').toLowerCase() === 'html';
+  const langStr = (s.language || '').toLowerCase(); // लैंग्वेज का नाम निकाल लिया
   
   playgroundFiles = {
-      html: '<h1>Hello, World!</h1>\n<div class="box">Let\'s code in HTML, CSS & JS!</div>\n<button onclick="greet()">Click Me</button>',
-      css: 'body {\n  font-family: sans-serif;\n  padding: 20px;\n}\n.box {\n  color: white;\n  background: #2563eb;\n  padding: 15px;\n  border-radius: 8px;\n  margin-bottom: 15px;\n}',
-      js: 'function greet() {\n  alert("Awesome! JavaScript is working.");\n}'
+      html: localStorage.getItem(`code_${id}_html`) || '<h1>Hello, World!</h1>\n<div class="box">Let\'s code in HTML, CSS & JS!</div>\n<button onclick="greet()">Click Me</button>',
+      css: localStorage.getItem(`code_${id}_css`) || 'body {\n  font-family: sans-serif;\n  padding: 20px;\n}\n.box {\n  color: white;\n  background: #059669;\n  padding: 15px;\n  border-radius: 8px;\n  margin-bottom: 15px;\n}',
+      js: localStorage.getItem(`code_${id}_js`) || 'function greet() {\n  alert("Awesome! JavaScript is working.");\n}'
   };
   currentFileExt = 'html';
 
@@ -608,13 +609,17 @@ async function chapter(id) {
   };
   
   const editorArea = el('textarea', { id: 'code-editor', spellcheck: false, autocapitalize: 'off', autocomplete: 'off', autocorrect: 'off', wrap: 'off' });
-  editorArea.value = isHTML ? playgroundFiles.html : (defaultCodes[(s.language || '').toLowerCase()] || '// Write your code here');
+  
+  // यहाँ बदलाव: अगर लोकल स्टोरेज में कोड है तो वो लोड होगा, वरना डिफ़ॉल्ट कोड 
+  editorArea.value = isHTML ? playgroundFiles.html : (localStorage.getItem(`code_${id}_${langStr}`) || defaultCodes[langStr] || '// Write your code here');
   
   const highlighter = el('pre', { id: 'code-highlighter' });
   const lineNumbers = el('div', { id: 'line-numbers', className: 'line-numbers' });
 
   editorArea.addEventListener('input', e => {
       if(isHTML) playgroundFiles[currentFileExt] = e.target.value;
+      // नया कोड: टाइप करते ही लोकल स्टोरेज में सेव करना
+      localStorage.setItem(`code_${id}_${isHTML ? currentFileExt : langStr}`, e.target.value);
       syncEditorLogic();
   });
   
@@ -627,6 +632,11 @@ async function chapter(id) {
           const end = editorArea.selectionEnd;
           editorArea.value = editorArea.value.substring(0, start) + "    " + editorArea.value.substring(end);
           editorArea.selectionStart = editorArea.selectionEnd = start + 4;
+          
+          // नया कोड: Tab दबाने पर भी सेव करना
+          if(isHTML) playgroundFiles[currentFileExt] = editorArea.value;
+          localStorage.setItem(`code_${id}_${isHTML ? currentFileExt : langStr}`, editorArea.value);
+          
           syncEditorLogic();
       }
   });
