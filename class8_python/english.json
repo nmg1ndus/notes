@@ -59,7 +59,7 @@
     },
     {
       "q": "3. Answer the following questions: (c)",
-      "answer": "**State the difference between the append() and extend().** /n The `append()` method accepts only one parameter and adds it at the end of the list. The `extend()` method accepts a list of elements and adds them at the end of the list, even allowing you to add another list. For example, `list1 = [1, 2]`: `list1.append([3, 4])` gives `[1, 2, [3, 4]]` (the list is added as a single item), while `list1.extend([3, 4])` gives `[1, 2, 3, 4]` (each element is added separately)."
+      "answer": "**State the difference between the append() and extend().** /n The append() method accepts only one parameter and adds it at the end of the list. The extend() method accepts a list of elements and adds them at the end of the list, even allowing you to add another list."
     },
     {
       "q": "3. Answer the following questions: (d)",
@@ -67,7 +67,7 @@
     },
     {
       "q": "3. Answer the following questions: (e)",
-      "answer": "**What is a list in Python? Give two features of lists.** /n A list in Python is used to store the sequence of various types of data. It can be defined as a collection of values or items of different types enclosed in square brackets [].Features include: /n 1. The lists are ordered. /n 2. The element of the list can access by index. /n 3. The lists are the mutable type."
+      "answer": "**What is a list in Python? Give two features of lists.** /n A list in Python is used to store the sequence of various types of data. It can be defined as a collection of values or items of different types enclosed in square brackets []. Features include: /n 1. The lists are ordered. /n 2. The lists are the mutable type."
     },
     {
       "q": "4. Write 'T' for True and 'F' for False statements: (a)",
@@ -83,129 +83,117 @@
     },
     {
       "q": "4. Write 'T' for True and 'F' for False statements: (d)",
-      "answer": "NumPy is an open-source library used to analyse and manipulate large sets of data. /n **F** (This describes Pandas. NumPy provides support for large multidimensional arrays and performs calculations)."
+      "answer": "NumPy is an open-source library used to analyse and manipulate large sets of data. /n **F** (This describes Pandas)."
     },
     {
       "q": "4. Write 'T' for True and 'F' for False statements: (e)",
-      "answer": "The items in the list are with the parentheses (). /n **F** (Items in a list are enclosed with square brackets [])."
+      "answer": "The items in the list are with the parentheses (). /n **F** (Items are enclosed in square brackets [])."
     },
     {
-      "q": "Lab Activity 1: (a)",
-      "answer": "**for x in range (2,6): print(x) else: print('Out of for loop')** \n 2\n3\n4\n5\nOut of for loop"
-    },
-    {
-      "q": "Lab Activity 1: (b)",
-      "answer": "**for x in range(5): for y in range(6): print(x, end='') print()** /n The inner loop prints the value of x six times on the same line (because of end=''). After the inner loop finishes, the outer-level print() moves the cursor to the next line. So each row repeats x six times: \n000000\n111111\n222222\n333333\n444444"
-    },
-    {
-      "q": "Lab Activity 1: (c)",
-      "answer": "**myset = {'python', 'programming', 'examples'} for x in myset: print(x)** \n python\nprogramming\nexamples\n*(Note: Output order may vary as sets are unordered data types)*"
+      "q": "Lab Activity 1: Find the output",
+      "answer": "**a. Output of for loop with else:** /n 2 /n 3 /n 4 /n 5 /n Out of for loop /n/n **b. Output of nested loop (0 to 4 repeating 6 times):** /n 000000 /n 111111 /n 222222 /n 333333 /n 444444 /n/n **c. Output of set loop:** /n python /n programming /n examples"
     },
     {
       "q": "Lab Activity 2:",
-      "answer": "**Write a python program to read three numbers and print them in ascending order.** \n Python program to sort three numbers taken from user input using if-elif-else.",
-      "code": "num1 = int(input(\"Enter number 1: \"))\nnum2 = int(input(\"Enter number 2: \"))\nnum3 = int(input(\"Enter number 3: \"))\n\nif num1 <= num2 and num1 <= num3:\n    if num2 <= num3:\n        print(\"Numbers in ascending order:\", num1, num2, num3)\n    else:\n        print(\"Numbers in ascending order:\", num1, num3, num2)\nelif num2 <= num1 and num2 <= num3:\n    if num1 <= num3:\n        print(\"Numbers in ascending order:\", num2, num1, num3)\n    else:\n        print(\"Numbers in ascending order:\", num2, num3, num1)\nelse:\n    if num1 <= num2:\n        print(\"Numbers in ascending order:\", num3, num1, num2)\n    else:\n        print(\"Numbers in ascending order:\", num3, num2, num1)",
+      "answer": "**Write a python program to read three numbers and print them in ascending order.** /n Simple nested if-else program to compare three numbers and print them in order.",
+      "code": "a = int(input(\"Enter first number: \"))\nb = int(input(\"Enter second number: \"))\nc = int(input(\"Enter third number: \"))\n\nif a <= b and a <= c:\n    if b <= c:\n        print(\"Ascending order:\", a, b, c)\n    else:\n        print(\"Ascending order:\", a, c, b)\nelif b <= a and b <= c:\n    if a <= c:\n        print(\"Ascending order:\", b, a, c)\n    else:\n        print(\"Ascending order:\", b, c, a)\nelse:\n    if a <= b:\n        print(\"Ascending order:\", c, a, b)\n    else:\n        print(\"Ascending order:\", c, b, a)",
       "algorithm": [
         "Start",
-        "Read three numbers from the user as num1, num2, and num3",
-        "If num1 is smaller than or equal to both num2 and num3, compare num2 and num3 to determine the exact order",
-        "Else if (elif) num2 is the smallest, compare num1 and num3 to determine the exact order",
-        "Else (num3 is the smallest), compare num1 and num2 to determine the exact order",
-        "Print the numbers in the evaluated ascending order",
+        "Take three numbers from the user and save them in variables a, b, and c.",
+        "Check if 'a' is the smallest number. If true, compare 'b' and 'c' to print the correct order.",
+        "Else check if 'b' is the smallest number. If true, compare 'a' and 'c' to print the correct order.",
+        "Else (if 'c' is the smallest), compare 'a' and 'b' to print the correct order.",
         "Stop"
       ]
     },
     {
       "q": "Lab Activity 3:",
       "answer": "**Write a python program to check whether a given number is odd or even.** /n Python program using modulo operator to check odd/even condition.",
-      "code": "num = int(input(\"Enter a number: \"))\nif num % 2 == 0:\n    print(num, \"is an even number.\")\nelse:\n    print(num, \"is an odd number.\")",
+      "code": "num = int(input(\"Enter a number: \"))\n\nif num % 2 == 0:\n    print(num, \"is an even number.\")\nelse:\n    print(num, \"is an odd number.\")",
       "algorithm": [
         "Start",
         "Read a number from the user and store it in variable 'num'",
-        "Check if 'num' divided by 2 leaves a remainder of 0 using the modulo operator (num % 2 == 0)",
-        "If the condition is True, print that the number is even",
-        "If the condition is False, print that the number is odd",
+        "Check if 'num' divided by 2 leaves a remainder of 0 using (num % 2 == 0)",
+        "If condition is True, print that the number is even",
+        "If condition is False, print that the number is odd",
         "Stop"
       ]
     },
     {
       "q": "Lab Activity 4:",
       "answer": "**Write a program to calculate simple interest.** /n Python program to apply the simple interest mathematical formula.",
-      "code": "p = float(input(\"Enter Principal amount: \"))\nr = float(input(\"Enter Rate of interest: \"))\nt = float(input(\"Enter Time (in years): \"))\nsi = (p * r * t) / 100\nprint(\"The Simple Interest is:\", si)",
+      "code": "p = float(input(\"Enter Principal amount: \"))\nr = float(input(\"Enter Rate of interest: \"))\nt = float(input(\"Enter Time (in years): \"))\n\nsi = (p * r * t) / 100\nprint(\"The Simple Interest is:\", si)",
       "algorithm": [
         "Start",
-        "Read the Principal amount and store it in variable 'p'",
-        "Read the Rate of interest and store it in variable 'r'",
-        "Read the Time period and store it in variable 't'",
-        "Calculate the simple interest using the formula: si = (p * r * t) / 100",
-        "Display the calculated simple interest 'si'",
+        "Read Principal amount (p), Rate (r), and Time (t) from the user",
+        "Calculate simple interest using formula: si = (p * r * t) / 100",
+        "Print the calculated simple interest",
         "Stop"
       ]
     },
     {
       "q": "Lab Activity 5:",
-      "answer": "**Print the following number pattern using Python range() and for loop. (Descending 5s to 1)** /n Nested loop program utilizing Python range() decrement to produce the number pattern.",
-      "code": "for i in range(5, 0, -1):\n    for j in range(i):\n        print(i, end=\" \")\n    print()",
+      "answer": "**Print the following descending number pattern using for loop.** /n Python nested loop program utilizing basic subtraction to produce the number pattern.",
+      "code": "rows = 5\n\nfor i in range(rows):\n    num = 5 - i\n    for j in range(num):\n        print(num, end=\" \")\n    print()",
       "algorithm": [
         "Start",
-        "Initialize an outer for loop with variable 'i' iterating from 5 down to 1 using range(5, 0, -1)",
-        "Inside the outer loop, initialize an inner for loop with variable 'j' iterating based on 'i' using range(i)",
-        "In the inner loop, print the value of 'i' and keep the cursor on the same line with a space after it using end=\" \"",
-        "Outside the inner loop, print an empty string to move to the next line",
+        "Set 'rows' to 5",
+        "Start an outer for loop 'i' which runs 5 times using range(rows)",
+        "Inside outer loop, calculate the number to print: num = 5 - i",
+        "Start an inner for loop 'j' which runs 'num' times",
+        "Inside inner loop, print 'num' with a space and stay on the same line",
+        "Outside inner loop, print an empty string to move to the next line",
         "Stop"
       ]
     },
     {
-      "q": "Lab Activity 6:",
-      "answer": "**Find the output of the following codes:** /n  **a. colors = [\"red\", \"green\"] ...** /n ['red', 'green']\n['yellow', 'red', 'green']\n['yellow', 'red', 'blue', 'green'] /n **b. num=int(input(\"enter a number\")) ...** /n Assuming user enters 5:\nenter a number5\nfactorial of 5 is 120"
+      "q": "Lab Activity 6: Find the output",
+      "answer": "**a. Output of List insert() operations:** /n ['red', 'green'] /n ['yellow', 'red', 'green'] /n ['yellow', 'red', 'blue', 'green'] /n/n **b. Output of factorial program (assuming user enters 5):** /n enter a number 5 /n factorial of 5 is 120"
     },
     {
       "q": "Lab Activity 7:",
       "answer": "**Write a program to find the whether a number is prime or not using 'while' loop.** /n Python program implementing a while loop to test for prime divisors.",
-      "code": "num = int(input(\"Enter a number: \"))\n\ni = 1\ndiv = 0\n\n# Count all the factors from 1 up to that number\nwhile i <= num:\n    if num % i == 0:\n        div = div + 1\n    i = i + 1\n\n# A prime number has exactly 2 factors (1 and itself)\nif div == 2:\n    print(num, \"is a Prime Number\")\nelif num == 1:\n    print(\"1 is neither a Prime nor a Composite Number\")\nelse:\n    print(num, \"is not a Prime Number\")",
+      "code": "num = int(input(\"Enter a number: \"))\n\ni = 1\ndiv = 0\n\nwhile i <= num:\n    if num % i == 0:\n        div = div + 1\n    i = i + 1\n\nif div == 2:\n    print(num, \"is a Prime Number\")\nelif num == 1:\n    print(\"1 is neither a Prime nor a Composite Number\")\nelse:\n    print(num, \"is not a Prime Number\")",
       "algorithm": [
         "Start",
-        "Read an integer from the user into variable 'num'",
-        "If 'num' is less than or equal to 1, print that it is not prime",
-        "Otherwise, initialize a counter variable 'i' to 2 and a boolean flag 'is_prime' to True",
-        "Begin a while loop that executes as long as 'i' is less than 'num'",
-        "Check if 'num' is perfectly divisible by 'i' (num % i == 0). If True, set 'is_prime' to False and break the loop",
-        "Increment 'i' by 1 for the next iteration",
-        "After the loop, check the 'is_prime' flag. If True, display that 'num' is prime; if False, display that it is not prime",
+        "Read a number from user in 'num'",
+        "Set 'i' to 1 and 'div' (divisor count) to 0",
+        "Start a while loop until 'i' is less than or equal to 'num'",
+        "If 'num' is divisible by 'i' (num % i == 0), increase 'div' by 1",
+        "Increase 'i' by 1 for next step",
+        "After loop, if 'div' is exactly 2, print it is a Prime Number",
+        "Else if 'num' is 1, print it is neither prime nor composite",
+        "Else print it is not a Prime Number",
         "Stop"
       ]
     },
     {
       "q": "Lab Activity 8:",
       "answer": "**Write a program to display the maximum and minimum of two numbers.** /n Python conditional program to evaluate minimum and maximum parameters.",
-      "code": "num1 = float(input(\"Enter the first number: \"))\nnum2 = float(input(\"Enter the second number: \"))\nif num1 > num2:\n    print(\"Maximum:\", num1)\n    print(\"Minimum:\", num2)\nelif num2 > num1:\n    print(\"Maximum:\", num2)\n    print(\"Minimum:\", num1)\nelse:\n    print(\"Both numbers are equal.\")",
+      "code": "num1 = float(input(\"Enter the first number: \"))\nnum2 = float(input(\"Enter the second number: \"))\n\nif num1 > num2:\n    print(\"Maximum:\", num1)\n    print(\"Minimum:\", num2)\nelif num2 > num1:\n    print(\"Maximum:\", num2)\n    print(\"Minimum:\", num1)\nelse:\n    print(\"Both numbers are equal.\")",
       "algorithm": [
         "Start",
-        "Read the first number into 'num1'",
-        "Read the second number into 'num2'",
-        "Check if 'num1' is greater than 'num2'",
-        "If True, print 'num1' as maximum and 'num2' as minimum",
-        "If False, check if 'num2' is greater than 'num1'",
-        "If True, print 'num2' as maximum and 'num1' as minimum",
-        "If neither condition is true, output that the numbers are equal",
+        "Read two numbers from user and save them in 'num1' and 'num2'",
+        "Check if num1 is greater than num2. If true, print num1 is Maximum and num2 is Minimum.",
+        "Else if num2 is greater than num1. If true, print num2 is Maximum and num1 is Minimum.",
+        "If both conditions are false, print that both numbers are equal.",
         "Stop"
       ]
     },
     {
       "q": "VALUE BASED QUESTIONS:",
-      "answer": "**Write a program to calculate total selling price after levying the GST. Calculate central govt. GST and state govt. GST rates...** /n Python script computing proper tax breakdowns based on merchandise condition slabs.",
-      "code": "item_category = input(\"Enter item category (Footwear/Apparels): \").lower()\nprice = float(input(\"Enter price per item/pair: \"))\n\ngst_percent = 0\nif item_category == \"footwear\":\n    if price <= 500:\n        gst_percent = 5\n    else:\n        gst_percent = 18\nelif item_category == \"apparels\":\n    if price <= 1000:\n        gst_percent = 5\n    else:\n        gst_percent = 12\nelse:\n    print(\"Invalid Category entered.\")\n\nif gst_percent > 0:\n    cgst_rate = gst_percent / 2\n    sgst_rate = gst_percent / 2\n    tax_amount = (price * gst_percent) / 100\n    total_price = price + tax_amount\n    print(f\"CGST ({cgst_rate}%): {(price * cgst_rate) / 100}\")\n    print(f\"SGST ({sgst_rate}%): {(price * sgst_rate) / 100}\")\n    print(\"Total Selling Price:\", total_price)",
+      "answer": "**Write a program to calculate total selling price after levying the GST. Calculate central govt. GST and state govt. GST rates.** /n Python script computing proper tax breakdowns based on merchandise condition slabs.",
+      "code": "category = input(\"Enter category (Footwear or Apparels): \")\nprice = float(input(\"Enter price per item: \"))\ngst = 0\n\nif category == \"Footwear\":\n    if price <= 500:\n        gst = 5\n    else:\n        gst = 18\nelif category == \"Apparels\":\n    if price <= 1000:\n        gst = 5\n    else:\n        gst = 12\nelse:\n    print(\"Invalid Category\")\n\nif gst > 0:\n    tax = (price * gst) / 100\n    total = price + tax\n    cgst = tax / 2\n    sgst = tax / 2\n    print(\"CGST amount:\", cgst)\n    print(\"SGST amount:\", sgst)\n    print(\"Total Selling Price:\", total)",
       "algorithm": [
         "Start",
-        "Prompt the user to input the item category ('Footwear' or 'Apparels')",
-        "Prompt the user to input the cost price of the item",
-        "Initialize 'gst_percent' to 0",
-        "If category is 'footwear', evaluate the price: if price <= 500, set 'gst_percent' to 5, else set it to 18",
-        "If category is 'apparels', evaluate the price: if price <= 1000, set 'gst_percent' to 5, else set it to 12 (Correcting source typo to represent slab > 1000)",
-        "Calculate 'cgst_rate' and 'sgst_rate' by dividing 'gst_percent' by 2",
-        "Calculate the total tax amount using: tax_amount = (price * gst_percent) / 100",
-        "Calculate 'total_price' by adding 'price' and 'tax_amount'",
-        "Print the computed CGST amount, SGST amount, and Total Selling Price",
+        "Prompt user to enter the category ('Footwear' or 'Apparels') and the item's price.",
+        "Check the category. If 'Footwear', set GST to 5% if price <= 500, else set to 18%.",
+        "If category is 'Apparels', set GST to 5% if price <= 1000, else set to 12%.",
+        "If category is invalid, print an error.",
+        "If GST is greater than 0, calculate tax amount = (price * gst) / 100.",
+        "Calculate total price = price + tax amount.",
+        "Calculate CGST and SGST by dividing the tax amount by 2.",
+        "Print the CGST, SGST, and Total Selling Price.",
         "Stop"
       ]
     }
