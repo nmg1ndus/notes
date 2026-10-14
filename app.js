@@ -21,8 +21,8 @@ let currentAppState = 'NOTES';
 let currentSkill = null;
 let playgroundFiles = { html: '', css: '', js: '' };
 let currentFileExt = '';
-let pendingInput = null;      // { resolve, reject } of the open input() popup
-let inputCancelled = false;   // true when the user closed the popup without submitting
+let pendingInput = null;
+let inputCancelled = false;
 
 
 function el(tag, props = {}, ...kids) {
@@ -68,12 +68,12 @@ function loadScript(src) {
 function formatText(str) {
   if (typeof str !== 'string') return str;
   let html = str
-    .replace(/\\n|\/n/g, '\n')
+    .replace(/\\n/g, '\n')
+    .replace(/\/n(?!o\b|otes\b)/g, '\n')
     .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
     .replace(/\*([^*]+)\*/g, '<i>$1</i>')
     .replace(/__([^_]+)__/g, '<u>$1</u>')
-    .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
-    .replace(/(^|[\s(])'([^'\n]+)'(?=[\s.,!?)\]]|$)/g, '$1<code class="inline-code">$2</code>');
+    .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
     
   if (html.includes('|')) {
     const lines = html.split('\n');
@@ -92,9 +92,11 @@ function formatText(str) {
       }
     }
     if (inTable) result.push(tableHtml + '</table></div>');
-    html = result.join('\n');
+    html = result.join('\n').replace(/<\/div>\n/g, '</div>').replace(/\n<div/g, '<div').replace(/\n/g, '<br>');
+  } else {
+    html = html.replace(/\n/g, '<br>');
   }
-  return html.replace(/\n/g, '<br>');
+  return html;
 }
 
 function richText(tag, props, text) {
@@ -170,20 +172,18 @@ function switchAppState(newState) {
   }
 }
 
-/* ---------- Editor Utilities (Line Number & Highlight Sync) ---------- */
+/* ---------- Editor Utilities ---------- */
 function syncEditorLogic() {
   const editor = document.getElementById('code-editor');
   if (!editor) return;
   const code = editor.value;
   
-  // Line numbers
   const lineNumbers = document.getElementById('line-numbers');
   if (lineNumbers) {
     const linesCount = code.split('\n').length;
     lineNumbers.innerHTML = Array.from({length: linesCount}, (_, i) => i + 1).join('<br>');
   }
 
-  // Syntax highlight (extra newline keeps the last empty line scroll-aligned with the textarea)
   const highlighter = document.getElementById('code-highlighter');
   const langStr = currentFileExt || (currentSkill.language || '').toLowerCase();
   highlighter.replaceChildren(highlight(code, langStr), document.createTextNode('\n'));
@@ -256,7 +256,7 @@ async function runCodeAction() {
                   if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined) throw "File not found: '" + x + "'";
                   return Sk.builtinFiles["files"][x];
               },
-              inputfunTakesPrompt: true,   // prompt text of input("...") is passed to inputfun
+              inputfunTakesPrompt: true,
               __future__: Sk.python3,
               inputfun: function(promptText) {
                   consoleEl.textContent += promptText;
@@ -315,8 +315,12 @@ function updateHeader(isIndex, s = null) {
   const oldBrand = headerTop.querySelector('.brand:not(#header-left .brand)');
   if (oldBrand) oldBrand.remove();
 
+  const makeLogo = () => el('a', { href: '#/', className: 'brand' }, 
+    el('img', { src: 'logo.png', alt: 'Vyut Notes', className: 'brand-logo' })
+  );
+
   if (isIndex) {
-    left.replaceChildren(el('a', { href: '#/', className: 'brand' }, 'Vyut Notes'));
+    left.replaceChildren(makeLogo());
   } else {
     const backBtn = el('a', { href: '#/', className: 'back-btn', 'aria-label': 'Go back' }, icon('M15 18l-6-6 6-6'));
     if (s && s.programming) {
@@ -326,7 +330,9 @@ function updateHeader(isIndex, s = null) {
       btnNotes.onclick = () => switchAppState('NOTES');
       btnCode.onclick = () => switchAppState('EDITOR');
       left.replaceChildren(backBtn, el('div', { className: 'header-slider' }, btnNotes, btnCode));
-    } else { left.replaceChildren(backBtn, el('span', { className: 'brand' }, 'Vyut Notes')); }
+    } else {
+      left.replaceChildren(backBtn, makeLogo());
+    }
   }
 
   if (isIndex || currentAppState === 'NOTES') {
@@ -368,7 +374,7 @@ function codeBox(language, code, question, algorithm) {
     el('div', { className: 'code-body' }, gutter, el('pre', {}, el('code', {}, highlight(code, language)))));
 }
 
-/* ---------- Bottom Sheets (Error, Lang, Algo, Input) ---------- */
+/* ---------- Bottom Sheets ---------- */
 let lastFocus = null;
 
 function setLang(newLang) {
@@ -415,7 +421,6 @@ function showError(msg) {
   document.body.style.overflow = 'hidden';
 }
 
-// Custom Input Prompt (contenteditable instead of <input>: Chrome/Gboard show no password/card/map autofill bar)
 function openInputSheet(promptMsg, resolveFunc, rejectFunc) {
   pendingInput = { resolve: resolveFunc, reject: rejectFunc };
   lastFocus = null;
@@ -436,19 +441,18 @@ function openInputSheet(promptMsg, resolveFunc, rejectFunc) {
     const p = pendingInput;
     if (!p) return;
     const val = (inputBox.textContent || '').replace(/[\r\n]+/g, ' ');
-    pendingInput = null;      // clear first, so closeSheet() does not treat this as a cancel
+    pendingInput = null;
     p.resolve(val);
     closeSheet();
   };
   submitBtn.onclick = submit;
 
   inputBox.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
-  inputBox.addEventListener('beforeinput', e => {   // Android keyboards often send Enter this way
+  inputBox.addEventListener('beforeinput', e => {
     if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') { e.preventDefault(); submit(); }
   });
   inputBox.addEventListener('input', () => { if (!inputBox.textContent) inputBox.innerHTML = ''; });
 
-  // Prompt text of input("...") shown above the box
   const promptLabel = el('div', { className: 'input-prompt-label' }, promptMsg || '');
 
   sheetBody.replaceChildren(promptLabel, inputBox, submitBtn);
@@ -466,7 +470,7 @@ function closeSheet() {
   backdrop.hidden = true; document.body.style.overflow = '';
   if (lastFocus) lastFocus.focus();
 
-  if (pendingInput) {       // popup closed without Submit -> stop the program (no fake empty input)
+  if (pendingInput) {
     const p = pendingInput;
     pendingInput = null;
     inputCancelled = true;
@@ -508,7 +512,7 @@ async function loadSkills() {
 const link = (href, ...kids) => el('a', { href }, ...kids);
 
 async function home() {
-  document.title = 'Computer Notes';
+  document.title = 'Vyut Notes';
   currentAppState = 'NOTES';
   updateHeader(true);
   const skills = await loadSkills();
@@ -533,14 +537,14 @@ async function chapter(id) {
   const s = skills[i];
   
   if (!s) {
-    document.title = 'Not found | Computer Notes';
+    document.title = 'Not found | Vyut Notes';
     currentAppState = 'NOTES';
     updateHeader(false);
     app.replaceChildren(el('h1', {}, 'Chapter not found'), link('#/', 'Back to all chapters'));
     return;
   }
   
-  document.title = `${title(s)} | Computer Notes`;
+  document.title = `${title(s)} | Vyut Notes`;
   currentSkill = s;
   currentAppState = 'NOTES';
   
@@ -560,14 +564,17 @@ async function chapter(id) {
       out.push(box);
     });
     
-    (d.questions || []).forEach((q, n) => {
+    (d.questions || []).forEach((q) => {
       const box = el('article', { className: 'qa' });
-      if (n > 0) box.append(el('hr', { className: 'thin-line' })); 
       box.append(richText('h2', {}, q.q));
       [].concat(q.answer || []).forEach(p => box.append(richText('p', {}, p)));
       if (s.programming && q.code) box.append(codeBox(q.language || s.language, q.code, q.q, q.algorithm));
       out.push(box);
+      out.push(el('hr', { className: 'thin-line' })); 
     });
+    
+    if (out.length > 0 && out[out.length - 1].className === 'thin-line') { out.pop(); }
+
   } catch (e) { out.push(el('p', { className: 'muted' }, 'Notes are not available in this language yet.')); }
   
   const next = skills[i + 1];
@@ -595,7 +602,6 @@ async function chapter(id) {
   
   const editorArea = el('textarea', { id: 'code-editor', spellcheck: false, autocapitalize: 'off', autocomplete: 'off', autocorrect: 'off', wrap: 'off' });
   
-  // सेव किए गए कोड को निकालना (अगर बॉक्स खाली भी छोड़ा है, तो खाली ही लोड होगा, डिफ़ॉल्ट नहीं)
   const savedCode = localStorage.getItem('code_' + id + '_' + langStr);
   editorArea.value = isHTML ? playgroundFiles.html : (savedCode !== null ? savedCode : (defaultCodes[langStr] || '// Write your code here'));
   
