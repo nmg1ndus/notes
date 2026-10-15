@@ -12,6 +12,6 @@
   "language": "python",
   "execution": "interpreter",
   "submit": true,
-  "webAppUrl": "यहाँ_अपना_COPIED_WEB_APP_URL_पेस्ट_करें",
+  "webAppUrl": "https://script.google.com/macros/s/AKfycbzElJMqRju_mS0S1j1GkqHnsgMg2VLCKpOngjeu1zsDHCJE88nbeiDPKF_Yw_8xmm6_/exec",
   "deadline": "2026-10-25T17:00:00"
 }
