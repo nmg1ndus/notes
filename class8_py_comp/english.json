@@ -1,0 +1,58 @@
+{
+  "summary": "Welcome to Vyut Code-a-Thon! Use your Python syllabus knowledge to build a unique, creative, and useful program with your team. Read all the rules and marking criteria carefully before coding in the Interpreter.",
+  "sections": [
+    {
+      "heading": "1. Team & Submission Rules",
+      "text": "Every participant must follow these competition guidelines strictly:",
+      "points": [
+        "**Team Size:** Each team can have a **maximum of 6 students**.",
+        "**Single Submission:** All members will plan, write, and test the program together, but **only 1 student (the Team Leader)** will submit the final code.",
+        "**One Chance Only:** Only the first submission from each team will be evaluated. Do not submit multiple times.",
+        "**Strict No-AI Policy:** Using ChatGPT, Gemini, or the internet to generate code is strictly prohibited. Copy-pasting is disabled in the Interpreter, so you must type your own code."
+      ],
+      "tip": "💡 **Team Viva Rule:** During evaluation, judges can ask **any random member** of your team to explain how a specific line or loop works. Make sure every team member understands the whole code!"
+    },
+    {
+      "heading": "2. Allowed Syntax, Functions & Operators",
+      "text": "Your program must be built using the concepts from your curriculum:",
+      "points": [
+        "**Basic Functions & Type Casting:** `print()`, `input()`, `int()`, `float()`, and `#` for comments.",
+        "**Operators:** Arithmetic (`+`, `-`, `*`, `/`, `%`), Comparison (`==`, `!=`, `>`, `<`, `>=`, `<=`), Logical (`and`, `or`, `not`), and Membership (`in`).",
+        "**Conditional Statements:** `if`, `if-else`, `elif`, and `elif` ladder.",
+        "**Loops:** `for` loop, `range()` function, nested `for` loop, and `while` loop.",
+        "**Lists:** Creating lists `[]`, indexing/slicing, and methods like `append()`, `insert()`, `extend()`, `remove()`, and `pop()`."
+      ],
+      "tip": "⚠️ **Special Permission Rule:** If your team wants to use any operator, function, or syntax outside the list above, you **must take prior permission from Gaurav Sir or Manish Sir**. External syntax will only be accepted if explicitly allowed by them."
+    },
+    {
+      "heading": "3. Point System (Total: 100 Marks)",
+      "text": "| Category | Marks | Evaluation Criteria |/n| --- | --- | --- |/n| **1. Unique Idea & Usefulness** | **25** | How original and helpful the program is in real life or school (avoid basic book questions like Odd/Even). |/n| **2. Code Accuracy & Syntax** | **25** | The program runs without errors and smartly uses loops, conditions, and lists. |/n| **3. Clean Code & Comments** | **15** | Clear variable names, neat output messages, and proper `#` comments explaining the logic. |/n| **4. Team Viva & Logic Test** | **35** | Any 2 or 3 random members from the team will be asked to explain the code and logic. |"
+    },
+    {
+      "heading": "4. How to Submit Your Project",
+      "points": [
+        "Switch from **Notes** to **Interpreter** using the top slider.",
+        "Type your Python program and click **Run** to test it thoroughly with different inputs.",
+        "Once your team's final code is ready, click the **Submit** button at the top right.",
+        "Enter your **Team Name** and the names of your team members (up to 6 students), then click **Submit Project** before the deadline."
+      ]
+    }
+  ],
+  "questions": [
+    {
+      "q": "Starter Example: Mini School Canteen Billing System",
+      "answer": "Here is a small example showing how you can combine `while` loop, `if-elif-else`, `and`/`or` operators, `int()`, and `lists` to make a useful project. **Do not copy this—create your own unique idea!**",
+      "code": "# Mini Canteen Billing Demo\nitems = []\ntotal = 0\nrun = 1\n\nprint(\"--- Welcome to School Canteen ---\")\n\nwhile run == 1:\n    print(\"1. Samosa (Rs 10)  2. Sandwich (Rs 25)  3. Exit & Bill\")\n    choice = int(input(\"Enter your choice (1/2/3): \"))\n\n    if choice == 1:\n        items.append(\"Samosa\")\n        total = total + 10\n        print(\"Samosa added!\")\n    elif choice == 2:\n        items.append(\"Sandwich\")\n        total = total + 25\n        print(\"Sandwich added!\")\n    elif choice == 3:\n        run = 0\n    else:\n        print(\"Invalid choice! Please select 1, 2 or 3.\")\n\nprint(\"--- Final Bill ---\")\nprint(\"Items ordered:\", items)\nprint(\"Total Amount: Rs\", total)",
+      "algorithm": [
+        "Start",
+        "Create an empty list 'items' and set 'total' to 0 and 'run' to 1",
+        "Run a while loop as long as 'run' is equal to 1",
+        "Show the menu and take the user's choice using int(input())",
+        "Use if-elif-else to add the chosen item to the list and add its price to 'total'",
+        "If user enters 3, set 'run' to 0 to stop the loop",
+        "Print the final list of items and the total bill amount",
+        "Stop"
+      ]
+    }
+  ]
+}
