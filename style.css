@@ -183,3 +183,13 @@ u { text-decoration: underline; text-underline-offset: 3px; text-decoration-colo
 
 #toast { position: fixed; left: 50%; bottom: 40px; z-index: 30; padding: 10px 20px; border-radius: 99px; background: #0f172a; color: #fff; font-size: 14px; font-weight: 500; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Competition Submit UI */
+.submit-top-btn { background: var(--accent); color: #fff; border-color: var(--accent); }
+.submit-top-btn:hover { opacity: 0.9; background: var(--accent); }
+#sheet.tall-sheet { height: 78vh; max-height: 82dvh; }
+.submit-form { display: flex; flex-direction: column; gap: 10px; padding-bottom: 16px; }
+.deadline-note { font-size: 13px; font-weight: 600; color: #b45309; background: #fef3c7; padding: 8px 12px; border-radius: 8px; border: 1px solid #fde68a; }
+.submit-field { width: 100%; padding: 11px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font-size: 15px; }
+.submit-field:focus { border-color: var(--accent); }
+
