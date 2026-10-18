@@ -1,0 +1,85 @@
+{
+  "summary": "Solutions for the exercise questions at the end of the chapter covering social networking platforms, blogs, online payments, and e-commerce business models.",
+  "questions": [
+    {
+      "q": "1. Fill in the blanks: (a)",
+      "answer": "**Instagram** is an online photo and video sharing social networking service."
+    },
+    {
+      "q": "1. Fill in the blanks: (b)",
+      "answer": "One who maintains a blog is known as a **blogger**."
+    },
+    {
+      "q": "1. Fill in the blanks: (c)",
+      "answer": "**E-payment (Electronic payment)** involves the online payment of money, and transmission of data to perform the transactions."
+    },
+    {
+      "q": "1. Fill in the blanks: (d)",
+      "answer": "When a company sells products or services directly to consumers over the Internet, they are involved in **B2C (Business-to-Consumer)**."
+    },
+    {
+      "q": "1. Fill in the blanks: (e)",
+      "answer": "**YouTube** is one of the most popular sites with a wide collection of videos."
+    },
+    {
+      "q": "2. Tick (✓) the correct option: (a)",
+      "answer": "**Which of the following is a type of website that allows us to share our thoughts and passions with the real-world?** /n **i. Blogger**"
+    },
+    {
+      "q": "2. Tick (✓) the correct option: (b)",
+      "answer": "**Twitter is a:** /n **ii. Blog (Microblog)**"
+    },
+    {
+      "q": "2. Tick (✓) the correct option: (c)",
+      "answer": "**Which of the following allows us to share our knowledge, ideas and views?** /n **i. Blog**"
+    },
+    {
+      "q": "2. Tick (✓) the correct option: (d)",
+      "answer": "**Facebook, Instagram, LinkedIn, Snapchat and Twitter are some popular:** /n **ii. Social Networking sites**"
+    },
+    {
+      "q": "2. Tick (✓) the correct option: (e)",
+      "answer": "**In which e-commerce model, one consumer sells products to another consumer?** /n **iii. C2C**"
+    },
+    {
+      "q": "3. Answer the following questions: (a)",
+      "answer": "**What do you mean by social networking sites? Name any two.** /n Social networking sites are online platforms or websites that allow individuals to create personal profiles, connect with friends, family, or colleagues, and share content such as messages, photos, and videos. /n Examples: **Facebook** and **Instagram**."
+    },
+    {
+      "q": "3. Answer the following questions: (b)",
+      "answer": "**Define blog. Name any two blogs.** /n A blog (short for weblog) is an informational website or online journal displaying information in reverse chronological order, where a writer or group of writers shares their views, ideas, and experiences on individual subjects. /n Examples of popular blogging platforms/blogs: **Blogger** and **WordPress**."
+    },
+    {
+      "q": "3. Answer the following questions: (c)",
+      "answer": "**How do you upload a video on YouTube channel?** /n To upload a video to a YouTube channel: /n 1. Sign in to your YouTube account on a web browser or app. /n 2. Click the **Create (Camera)** icon at the top right and select **Upload video**. /n 3. Select the video file from your computer or phone. /n 4. Add video details like Title, Description, and Thumbnail. /n 5. Choose visibility settings (Public) and click **Publish**."
+    },
+    {
+      "q": "3. Answer the following questions: (d)",
+      "answer": "**What do you mean by e-commerce?** /n E-commerce (Electronic Commerce) refers to the buying and selling of goods, products, or services and the transferring of funds or data over the Internet. It is also known as online commerce or internet commerce."
+    },
+    {
+      "q": "3. Answer the following questions: (e)",
+      "answer": "**Write the differences between B2B and B2C.** /n | Feature | B2B (Business-to-Business) | B2C (Business-to-Consumer) |/n| --- | --- | --- |/n| **Definition** | Transactions conducted between two or more business companies. | Transactions conducted directly between a business and individual end consumers. |/n| **Target Audience** | Other businesses and wholesalers. | General public / retail shoppers. |/n| **Example** | Alibaba, IndiaMART | Amazon, Flipkart |"
+    },
+    {
+      "q": "4. Write 'T' for True and 'F' for False statements: (a)",
+      "answer": "**Instagram allows you to post comments, share pictures, music, videos, post links, news to others on the web.** /n **T**"
+    },
+    {
+      "q": "4. Write 'T' for True and 'F' for False statements: (b)",
+      "answer": "**www.amazon.com, www.olx.in, etc. are some examples of B2B e-commerce.** /n **F** (Amazon is primarily B2C, and OLX is C2C)."
+    },
+    {
+      "q": "4. Write 'T' for True and 'F' for False statements: (c)",
+      "answer": "**A blog is an online diary or journal located on a website.** /n **T**"
+    },
+    {
+      "q": "4. Write 'T' for True and 'F' for False statements: (d)",
+      "answer": "**Amazon is a video sharing service that allows us to watch videos posted by other users.** /n **F** (Amazon is an e-commerce platform; YouTube is a video sharing service)."
+    },
+    {
+      "q": "4. Write 'T' for True and 'F' for False statements: (e)",
+      "answer": "**E-commerce is also known as internet commerce, and online commerce.** /n **T**"
+    }
+  ]
+}
