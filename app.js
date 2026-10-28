@@ -497,15 +497,17 @@ async function loadSkills() {
     if (!res.ok) throw new Error('API limit reached');
     const data = await res.json();
     const folders = data.filter(item => item.type === 'dir' && !item.name.startsWith('.')).map(item => item.name);
-    return await Promise.all(folders.map(async id => {
-      try { return { id, ...(await getJSON(`${id}/skill.json`)) }; } catch (e) { return { id, title: { en: id } }; }
+    const items = await Promise.all(folders.map(async id => {
+      try { return { id, ...(await getJSON(`${id}/skill.json`)) }; } catch (e) { return null; }
     }));
+    return items.filter(Boolean);
   } catch (error) {
     const ids = await getJSON('chapters.json').catch(() => []);
     if (!ids.length) showError("Couldn't load chapters. Please check your internet connection.");
-    return Promise.all(ids.map(async id => {
-      try { return { id, ...(await getJSON(`${id}/skill.json`)) }; } catch (e) { return { id, title: { en: id } }; }
+    const items = await Promise.all(ids.map(async id => {
+      try { return { id, ...(await getJSON(`${id}/skill.json`)) }; } catch (e) { return null; }
     }));
+    return items.filter(Boolean);
   }
 }
 
