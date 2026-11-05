@@ -1,4 +1,5 @@
 import os
+import io
 import time
 import uuid
 import random
@@ -6,6 +7,8 @@ import threading
 from datetime import datetime
 import pandas as pd
 import pyperclip
+from PIL import Image
+import win32clipboard
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext
 
@@ -20,10 +23,10 @@ from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 
 
-class StealthWhatsAppSender:
+class StealthWhatsAppSenderV3:
     def __init__(self, root):
         self.root = root
-        self.root.title("Stealth WhatsApp Fee Sender (Anti-Ban Engine v2.1)")
+        self.root.title("Stealth WhatsApp Fee Sender (Zero-Popup Engine v3.0)")
         self.root.geometry("780x620")
 
         self.excel_path = tk.StringVar()
@@ -32,6 +35,7 @@ class StealthWhatsAppSender:
         self.driver = None
 
         self.build_ui()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def build_ui(self):
         frame = tk.Frame(self.root, padx=15, pady=15)
@@ -53,12 +57,12 @@ class StealthWhatsAppSender:
 
         tk.Label(cfg_frame, text="Min Delay (s):").grid(row=0, column=0, sticky="w")
         self.min_delay = tk.Entry(cfg_frame, width=6)
-        self.min_delay.insert(0, "22")
+        self.min_delay.insert(0, "20")
         self.min_delay.grid(row=0, column=1, padx=(5, 15))
 
         tk.Label(cfg_frame, text="Max Delay (s):").grid(row=0, column=2, sticky="w")
         self.max_delay = tk.Entry(cfg_frame, width=6)
-        self.max_delay.insert(0, "45")
+        self.max_delay.insert(0, "42")
         self.max_delay.grid(row=0, column=3, padx=(5, 15))
 
         tk.Label(cfg_frame, text="Micro-Break Every (msgs):").grid(row=0, column=4, sticky="w")
@@ -99,6 +103,35 @@ class StealthWhatsAppSender:
     def stop_sending(self):
         self.is_running = False
         self.log("WARN", "Stop signal received. Halting safely after the current operation...")
+
+    def on_close(self):
+        self.is_running = False
+        self.close_driver_safely()
+        self.root.destroy()
+
+    def close_driver_safely(self):
+        if self.driver:
+            try:
+                self.driver.quit()
+            except Exception:
+                pass
+            self.driver = None
+
+    @staticmethod
+    def copy_image_to_clipboard(image_path):
+        """Copies an image file directly to the Windows system clipboard as CF_DIB."""
+        image = Image.open(image_path)
+        output = io.BytesIO()
+        image.convert("RGB").save(output, "BMP")
+        data = output.getvalue()[14:]  # Strip 14-byte BMP header for CF_DIB format
+        output.close()
+
+        win32clipboard.OpenClipboard()
+        try:
+            win32clipboard.EmptyClipboard()
+            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+        finally:
+            win32clipboard.CloseClipboard()
 
     def generate_complex_hindi_message(self, row):
         student = str(row['Student name']).strip()
@@ -150,10 +183,13 @@ class StealthWhatsAppSender:
         )
         return msg
 
-    def human_pause(self, min_sec=0.8, max_sec=2.2):
+    def human_pause(self, min_sec=0.8, max_sec=2.0):
         time.sleep(random.uniform(min_sec, max_sec))
 
     def init_stealth_browser(self):
+        # Always close any leftover driver instance from previous runs
+        self.close_driver_safely()
+
         session_dir = os.path.abspath("./whatsapp_stealth_session")
         options = webdriver.ChromeOptions()
         options.add_argument(f"--user-data-dir={session_dir}")
@@ -174,99 +210,62 @@ class StealthWhatsAppSender:
 
         wait = WebDriverWait(self.driver, 35)
 
-        # STEP 1: Wait for chat message box or Invalid Number popup
+        # STEP 1: Wait for chat message box (#main footer) or Invalid Number popup
         try:
             wait.until(lambda d: (
-                len(d.find_elements(By.CSS_SELECTOR, "#main footer")) > 0 or
+                len(d.find_elements(By.CSS_SELECTOR, "#main footer div[contenteditable='true']")) > 0 or
                 len(d.find_elements(By.XPATH, "//*[contains(text(), 'Phone number shared via url is invalid')]")) > 0 or
                 len(d.find_elements(By.XPATH, "//*[contains(text(), 'अमान्य')]")) > 0
             ))
         except TimeoutException:
             raise RuntimeError("Step 1 Timeout: Chat window did not load within 35s.")
 
-        # Check if number is invalid
         if (self.driver.find_elements(By.XPATH, "//*[contains(text(), 'Phone number shared via url is invalid')]") or
                 self.driver.find_elements(By.XPATH, "//*[contains(text(), 'अमान्य')]")):
             raise ValueError("Phone number is not registered on WhatsApp.")
 
-        self.human_pause(1.2, 2.2)
-
-        # STEP 2: Click Attach ('+') Button (supports all new & old WhatsApp Web icons)
-        attach_selectors = (
-            "span[data-icon='plus-rounded'], "
-            "span[data-icon='plus'], "
-            "span[data-icon='attach-menu-plus'], "
-            "span[data-icon='clip'], "
-            "div[title='Attach'], "
-            "button[aria-label='Attach']"
-        )
-        try:
-            attach_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, attach_selectors)))
-            self.driver.execute_script("arguments[0].click();", attach_btn)
-        except TimeoutException:
-            raise RuntimeError("Step 2 Timeout: Could not find Attach (+) button in chat footer.")
-
         self.human_pause(1.0, 1.8)
 
-        # STEP 3: Upload QR Image into the media file input
-        try:
-            file_inputs = self.driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
-            target_input = None
-            for inp in file_inputs:
-                accept_attr = (inp.get_attribute("accept") or "").lower()
-                if "image" in accept_attr or "video" in accept_attr:
-                    target_input = inp
-                    break
-            if not target_input and file_inputs:
-                target_input = file_inputs[-1]  # Fallback to last file input
+        # STEP 2: Click main chat text box & Paste Hindi Message first
+        # (When you type text in WhatsApp and then paste an image, WhatsApp automatically moves the text into the image caption!)
+        msg_box = wait.until(EC.element_to_be_clickable((
+            By.CSS_SELECTOR, "#main footer div[contenteditable='true']"
+        )))
+        msg_box.click()
+        self.human_pause(0.4, 0.9)
 
-            if not target_input:
-                raise RuntimeError("Step 3 Error: No file input element found after clicking Attach.")
+        pyperclip.copy(hindi_caption)
+        ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
+        self.human_pause(1.2, 2.2)
 
-            target_input.send_keys(qr_abs_path)
-        except Exception as e:
-            raise RuntimeError(f"Step 3 Upload Failed: {str(e)}")
+        # STEP 3: Copy QR Image to Clipboard & Paste directly via Ctrl+V (Zero Popups!)
+        self.copy_image_to_clipboard(qr_abs_path)
+        self.human_pause(0.5, 1.0)
+        ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
 
-        # STEP 4: Wait for Image Preview Modal & Paste Hindi Caption
-        self.human_pause(2.5, 4.0)
-        try:
-            # Wait until the Send button in the media preview screen appears
-            send_selectors = (
-                "span[data-icon='send'], "
-                "span[data-icon='wds-ic-send-filled'], "
-                "div[aria-label='Send'], "
-                "button[aria-label='Send']"
-            )
-            send_btn = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, send_selectors)))
+        # STEP 4: Wait for Image Preview Screen to render (Wait for the 'x' close icon or green send icon)
+        self.human_pause(2.8, 4.2)
 
-            # Copy Hindi caption to clipboard
-            pyperclip.copy(hindi_caption)
+        # STEP 5: Dispatch via ENTER key (Primary) + Green Send Button Click (Fallback)
+        ActionChains(self.driver).send_keys(Keys.ENTER).perform()
+        self.human_pause(1.0, 1.5)
 
-            # Find caption input inside the preview modal (exclude left pane search box)
-            caption_boxes = self.driver.find_elements(
-                By.XPATH, "//div[@contenteditable='true' and not(@data-tab='3')]"
-            )
-            if caption_boxes:
-                caption_box = caption_boxes[0]
-                caption_box.click()
-                self.human_pause(0.4, 0.8)
-                ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
-            else:
-                # Fallback: WhatsApp auto-focuses the caption input on image load
-                ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
-
-            self.human_pause(1.5, 2.8)
-
-            # STEP 5: Click Send Button (or press Enter)
+        # Verify if preview modal is still open; if yes, click the green Send button directly
+        send_selectors = (
+            "div[aria-label='Send'], "
+            "button[aria-label='Send'], "
+            "span[data-icon='send'], "
+            "span[data-icon='wds-ic-send-filled']"
+        )
+        remaining_send_btns = self.driver.find_elements(By.CSS_SELECTOR, send_selectors)
+        if remaining_send_btns:
             try:
-                self.driver.execute_script("arguments[0].click();", send_btn)
+                self.driver.execute_script("arguments[0].click();", remaining_send_btns[-1])
             except Exception:
-                ActionChains(self.driver).send_keys(Keys.ENTER).perform()
+                pass
 
-            self.human_pause(3.0, 4.5)
-
-        except TimeoutException:
-            raise RuntimeError("Step 4 Timeout: Image preview modal or Send button did not appear.")
+        # Wait 3.5 seconds so the image upload finishes completely before navigating to next number
+        self.human_pause(3.5, 5.0)
 
     def start_thread(self):
         if not self.excel_path.get() or not os.path.exists(self.excel_path.get()):
@@ -293,7 +292,6 @@ class StealthWhatsAppSender:
             if 'Sent_Timestamp' not in df.columns:
                 df['Sent_Timestamp'] = ""
 
-            # Ensure columns are string type to avoid pandas dtype warnings
             df['Delivery_Status'] = df['Delivery_Status'].fillna("").astype(str)
             df['Sent_Timestamp'] = df['Sent_Timestamp'].fillna("").astype(str)
 
@@ -315,7 +313,7 @@ class StealthWhatsAppSender:
             WebDriverWait(self.driver, 90).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "div[id='pane-side']"))
             )
-            self.log("SUCCESS", "WhatsApp Web authenticated. Starting dispatch loop...")
+            self.log("SUCCESS", "WhatsApp Web authenticated. Starting zero-popup dispatch loop...")
 
             qr_abs_path = os.path.abspath(self.qr_path.get())
             min_d = float(self.min_delay.get())
@@ -396,11 +394,12 @@ class StealthWhatsAppSender:
             self.log("CRITICAL", f"System Exception: {repr(e)}")
         finally:
             self.is_running = False
+            self.close_driver_safely()
             self.start_btn.config(state=tk.NORMAL)
             self.stop_btn.config(state=tk.DISABLED)
 
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = StealthWhatsAppSender(root)
+    app = StealthWhatsAppSenderV3(root)
     root.mainloop()
