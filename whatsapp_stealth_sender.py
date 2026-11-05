@@ -16,13 +16,14 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 
 
 class StealthWhatsAppSender:
     def __init__(self, root):
         self.root = root
-        self.root.title("Stealth WhatsApp Fee Sender (Anti-Ban Engine v2.0)")
+        self.root.title("Stealth WhatsApp Fee Sender (Anti-Ban Engine v2.1)")
         self.root.geometry("780x620")
 
         self.excel_path = tk.StringVar()
@@ -57,7 +58,7 @@ class StealthWhatsAppSender:
 
         tk.Label(cfg_frame, text="Max Delay (s):").grid(row=0, column=2, sticky="w")
         self.max_delay = tk.Entry(cfg_frame, width=6)
-        self.max_delay.insert(0, "48")
+        self.max_delay.insert(0, "45")
         self.max_delay.grid(row=0, column=3, padx=(5, 15))
 
         tk.Label(cfg_frame, text="Micro-Break Every (msgs):").grid(row=0, column=4, sticky="w")
@@ -100,10 +101,6 @@ class StealthWhatsAppSender:
         self.log("WARN", "Stop signal received. Halting safely after the current operation...")
 
     def generate_complex_hindi_message(self, row):
-        """
-        Generates a polymorphic Hindi message with multi-layer Spintax
-        and invisible Zero-Width characters to bypass hash-matching filters.
-        """
         student = str(row['Student name']).strip()
         father = str(row['Father name']).strip()
         reg_no = str(row['Reg.no']).strip()
@@ -112,7 +109,6 @@ class StealthWhatsAppSender:
         month = str(row['month']).strip()
         amount = int(float(row['amount']))
 
-        # Layer 1: Varied Greetings
         greetings = [
             f"नमस्ते {father} जी",
             f"सादर प्रणाम {father} जी",
@@ -121,7 +117,6 @@ class StealthWhatsAppSender:
             f"नमस्कार {father} जी"
         ]
 
-        # Layer 2: Varied Fee Information Body
         bodies = [
             f"विद्यालय रिकॉर्ड के अनुसार आपके बच्चे *{student}* (Reg. No: {reg_no}, कक्षा: {cls}-{sec}) की माह *{month}* तक की देय शुल्क राशि *₹{amount}* लंबित है।",
             f"सूचित किया जाता है कि छात्र/छात्रा *{student}* (कक्षा {cls}-{sec}, Reg: {reg_no}) का *{month}* माह तक का विद्यालय शुल्क *₹{amount}* बकाया है।",
@@ -129,7 +124,6 @@ class StealthWhatsAppSender:
             f"यह एक सामान्य अनुस्मारक (Reminder) है कि *{student}* (Class: {cls}-{sec}, Reg No: {reg_no}) की माह *{month}* तक की स्कूल फीस *₹{amount}* जमा होनी शेष है।"
         ]
 
-        # Layer 3: Varied Call-to-Action for QR Code
         ctas = [
             "आप ऊपर दिए गए QR कोड को स्कैन करके ऑनलाइन भुगतान कर सकते हैं। भुगतान के बाद कृपया रसीद या स्क्रीनशॉट इसी नंबर पर भेज दें।",
             "कृपया संलग्न QR कोड के माध्यम से बकाया शुल्क जमा करने का कष्ट करें एवं पेमेंट का स्क्रीनशॉट यहाँ शेयर करें।",
@@ -137,7 +131,6 @@ class StealthWhatsAppSender:
             "कृपया इस मैसेज में दिए गए QR कोड को स्कैन कर फीस जमा करें और कन्फर्मेशन के लिए स्क्रीनशॉट अवश्य भेजें।"
         ]
 
-        # Layer 4: Varied Closings
         closings = [
             "सहयोग के लिए धन्यवाद।",
             "सादर धन्यवाद,\nविद्यालय प्रशासन",
@@ -145,7 +138,6 @@ class StealthWhatsAppSender:
             "आपके सहयोग हेतु धन्यवाद।"
         ]
 
-        # Invisible Zero-Width Spaces (\u200b, \u200c) injected randomly to alter message hash
         zwsp = "".join(random.choices(["\u200b", "\u200c", ""], k=4))
         ref_token = uuid.uuid4().hex[:5].upper()
 
@@ -166,70 +158,115 @@ class StealthWhatsAppSender:
         options = webdriver.ChromeOptions()
         options.add_argument(f"--user-data-dir={session_dir}")
         options.add_argument("--start-maximized")
-        # Anti-bot detection arguments
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option("useAutomationExtension", False)
 
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-        # Mask navigator.webdriver property
         driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
         })
         return driver
 
     def send_single_message(self, phone, hindi_caption, qr_abs_path):
-        # Open chat WITHOUT pre-filling long text in URL (avoids URL length fingerprinting)
         url = f"https://web.whatsapp.com/send?phone=91{phone}"
         self.driver.get(url)
 
         wait = WebDriverWait(self.driver, 35)
 
-        # Wait until either the chat loads OR an 'Invalid phone number' popup appears
-        time.sleep(3)
-        invalid_popups = self.driver.find_elements(By.XPATH, "//*[contains(text(), 'Phone number shared via url is invalid')]")
-        if invalid_popups:
+        # STEP 1: Wait for chat message box or Invalid Number popup
+        try:
+            wait.until(lambda d: (
+                len(d.find_elements(By.CSS_SELECTOR, "#main footer")) > 0 or
+                len(d.find_elements(By.XPATH, "//*[contains(text(), 'Phone number shared via url is invalid')]")) > 0 or
+                len(d.find_elements(By.XPATH, "//*[contains(text(), 'अमान्य')]")) > 0
+            ))
+        except TimeoutException:
+            raise RuntimeError("Step 1 Timeout: Chat window did not load within 35s.")
+
+        # Check if number is invalid
+        if (self.driver.find_elements(By.XPATH, "//*[contains(text(), 'Phone number shared via url is invalid')]") or
+                self.driver.find_elements(By.XPATH, "//*[contains(text(), 'अमान्य')]")):
             raise ValueError("Phone number is not registered on WhatsApp.")
 
-        # 1. Locate '+' Attach Button
-        attach_btn = wait.until(EC.element_to_be_clickable((
-            By.CSS_SELECTOR, "span[data-icon='plus'], span[data-icon='attach-menu-plus'], div[title='Attach']"
-        )))
-        self.human_pause(1.2, 2.8)
+        self.human_pause(1.2, 2.2)
 
-        # Occasional harmless mouse movement to mimic human presence
+        # STEP 2: Click Attach ('+') Button (supports all new & old WhatsApp Web icons)
+        attach_selectors = (
+            "span[data-icon='plus-rounded'], "
+            "span[data-icon='plus'], "
+            "span[data-icon='attach-menu-plus'], "
+            "span[data-icon='clip'], "
+            "div[title='Attach'], "
+            "button[aria-label='Attach']"
+        )
         try:
-            ActionChains(self.driver).move_to_element(attach_btn).pause(random.uniform(0.2, 0.6)).click().perform()
-        except Exception:
-            attach_btn.click()
+            attach_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, attach_selectors)))
+            self.driver.execute_script("arguments[0].click();", attach_btn)
+        except TimeoutException:
+            raise RuntimeError("Step 2 Timeout: Could not find Attach (+) button in chat footer.")
 
-        self.human_pause(0.8, 1.6)
+        self.human_pause(1.0, 1.8)
 
-        # 2. Upload QR Image
-        file_input = wait.until(EC.presence_of_element_located((
-            By.CSS_SELECTOR, "input[accept*='image']"
-        )))
-        file_input.send_keys(qr_abs_path)
+        # STEP 3: Upload QR Image into the media file input
+        try:
+            file_inputs = self.driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
+            target_input = None
+            for inp in file_inputs:
+                accept_attr = (inp.get_attribute("accept") or "").lower()
+                if "image" in accept_attr or "video" in accept_attr:
+                    target_input = inp
+                    break
+            if not target_input and file_inputs:
+                target_input = file_inputs[-1]  # Fallback to last file input
 
-        # 3. Wait for Image Preview Modal & Caption Input Box
-        caption_box = wait.until(EC.presence_of_element_located((
-            By.CSS_SELECTOR, "div[contenteditable='true'][data-tab='10'], div[aria-placeholder*='caption'], div[title*='caption'], div[contenteditable='true']"
-        )))
-        self.human_pause(1.8, 3.2)
+            if not target_input:
+                raise RuntimeError("Step 3 Error: No file input element found after clicking Attach.")
 
-        # Copy Hindi message to clipboard and paste via Ctrl+V (prevents ChromeDriver BMP emoji crash & looks natural)
-        pyperclip.copy(hindi_caption)
-        caption_box.click()
-        self.human_pause(0.4, 0.9)
-        caption_box.send_keys(Keys.CONTROL, 'v')
-        self.human_pause(1.5, 3.0)
+            target_input.send_keys(qr_abs_path)
+        except Exception as e:
+            raise RuntimeError(f"Step 3 Upload Failed: {str(e)}")
 
-        # 4. Press Enter or Click Send
-        send_btn = wait.until(EC.element_to_be_clickable((
-            By.CSS_SELECTOR, "span[data-icon='send'], div[aria-label='Send']"
-        )))
-        send_btn.click()
+        # STEP 4: Wait for Image Preview Modal & Paste Hindi Caption
         self.human_pause(2.5, 4.0)
+        try:
+            # Wait until the Send button in the media preview screen appears
+            send_selectors = (
+                "span[data-icon='send'], "
+                "span[data-icon='wds-ic-send-filled'], "
+                "div[aria-label='Send'], "
+                "button[aria-label='Send']"
+            )
+            send_btn = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, send_selectors)))
+
+            # Copy Hindi caption to clipboard
+            pyperclip.copy(hindi_caption)
+
+            # Find caption input inside the preview modal (exclude left pane search box)
+            caption_boxes = self.driver.find_elements(
+                By.XPATH, "//div[@contenteditable='true' and not(@data-tab='3')]"
+            )
+            if caption_boxes:
+                caption_box = caption_boxes[0]
+                caption_box.click()
+                self.human_pause(0.4, 0.8)
+                ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
+            else:
+                # Fallback: WhatsApp auto-focuses the caption input on image load
+                ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
+
+            self.human_pause(1.5, 2.8)
+
+            # STEP 5: Click Send Button (or press Enter)
+            try:
+                self.driver.execute_script("arguments[0].click();", send_btn)
+            except Exception:
+                ActionChains(self.driver).send_keys(Keys.ENTER).perform()
+
+            self.human_pause(3.0, 4.5)
+
+        except TimeoutException:
+            raise RuntimeError("Step 4 Timeout: Image preview modal or Send button did not appear.")
 
     def start_thread(self):
         if not self.excel_path.get() or not os.path.exists(self.excel_path.get()):
@@ -251,16 +288,18 @@ class StealthWhatsAppSender:
             df = pd.read_excel(excel_file)
             df.columns = df.columns.str.strip()
 
-            # Initialize tracking columns if not present
             if 'Delivery_Status' not in df.columns:
                 df['Delivery_Status'] = ""
             if 'Sent_Timestamp' not in df.columns:
                 df['Sent_Timestamp'] = ""
 
-            # Filter pending rows where amount > 0 and status != SENT
+            # Ensure columns are string type to avoid pandas dtype warnings
+            df['Delivery_Status'] = df['Delivery_Status'].fillna("").astype(str)
+            df['Sent_Timestamp'] = df['Sent_Timestamp'].fillna("").astype(str)
+
             pending_indices = df[
                 (pd.to_numeric(df['amount'], errors='coerce') > 0) &
-                (df['Delivery_Status'].astype(str).str.upper() != 'SENT')
+                (df['Delivery_Status'].str.upper() != 'SENT')
             ].index.tolist()
 
             self.log("INFO", f"Total Rows: {len(df)} | Eligible Pending Rows (Amount > 0 & Unsent): {len(pending_indices)}")
@@ -276,7 +315,7 @@ class StealthWhatsAppSender:
             WebDriverWait(self.driver, 90).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "div[id='pane-side']"))
             )
-            self.log("SUCCESS", "WhatsApp Web authenticated successfully. Starting dispatch loop...")
+            self.log("SUCCESS", "WhatsApp Web authenticated. Starting dispatch loop...")
 
             qr_abs_path = os.path.abspath(self.qr_path.get())
             min_d = float(self.min_delay.get())
@@ -297,7 +336,7 @@ class StealthWhatsAppSender:
                 amount = int(float(row['amount']))
 
                 if len(phone) != 10:
-                    self.log("ERROR", f"Row {idx+2} ({student}): Invalid 10-digit phone number '{raw_phone}'. Skipping.")
+                    self.log("ERROR", f"Row {idx+2} ({student}): Invalid 10-digit number '{raw_phone}'. Skipping.")
                     df.at[idx, 'Delivery_Status'] = "INVALID_NUMBER"
                     df.to_excel(excel_file, index=False)
                     continue
@@ -315,24 +354,20 @@ class StealthWhatsAppSender:
 
                     self.log("SUCCESS", f"Delivered to {student} ({phone}) | Session Count: {sent_in_session}/{len(pending_indices)}")
 
-                    # Check if all pending messages are done
                     if sent_in_session >= len(pending_indices):
                         break
 
-                    # Anti-Ban Tier 1: Long Cooldown Break every 45 messages
                     if sent_in_session % 45 == 0:
-                        cooldown = random.randint(480, 720)  # 8 to 12 minutes
-                        self.log("COOLDOWN", f"Reached 45 messages threshold. Entering deep cooldown for {cooldown // 60}m {cooldown % 60}s...")
+                        cooldown = random.randint(480, 720)
+                        self.log("COOLDOWN", f"45 messages reached. Entering cooldown for {cooldown // 60}m {cooldown % 60}s...")
                         time.sleep(cooldown)
 
-                    # Anti-Ban Tier 2: Randomized Micro-Break every ~12-18 messages
                     elif sent_in_session >= next_micro_break:
-                        m_break = random.randint(110, 210)  # 1.8 to 3.5 minutes
-                        self.log("PAUSE", f"Micro-batch completed ({sent_in_session} sent). Taking a natural coffee break for {m_break}s...")
+                        m_break = random.randint(110, 210)
+                        self.log("PAUSE", f"Micro-batch done ({sent_in_session} sent). Taking coffee break for {m_break}s...")
                         time.sleep(m_break)
                         next_micro_break = sent_in_session + random.randint(max(5, batch_limit - 3), batch_limit + 3)
 
-                    # Anti-Ban Tier 3: Gaussian Jitter Delay between individual messages
                     else:
                         mean_d = (min_d + max_d) / 2
                         std_d = (max_d - min_d) / 4
@@ -341,24 +376,24 @@ class StealthWhatsAppSender:
                         time.sleep(jitter_delay)
 
                 except ValueError as ve:
-                    self.log("ERROR", f"Failed for {student} ({phone}): {str(ve)}")
+                    self.log("ERROR", f"Skipped {student} ({phone}): {str(ve)}")
                     df.at[idx, 'Delivery_Status'] = "NOT_ON_WHATSAPP"
                     df.to_excel(excel_file, index=False)
-                    self.human_pause(4, 7)
+                    self.human_pause(3, 6)
 
                 except Exception as ex:
-                    err_line = str(ex).splitlines()[0] if str(ex) else "Unknown WebDriver Timeout"
-                    self.log("ERROR", f"Failed for {student} ({phone}) | Reason: {err_line}")
+                    err_msg = str(ex).splitlines()[0] if str(ex).strip() else repr(ex)
+                    self.log("ERROR", f"Failed for {student} ({phone}) | {err_msg}")
                     df.at[idx, 'Delivery_Status'] = "FAILED_RETRY"
                     df.to_excel(excel_file, index=False)
-                    self.human_pause(5, 9)
+                    self.human_pause(4, 8)
 
             self.log("INFO", f"Batch execution finished. Total messages sent in this session: {sent_in_session}")
 
         except PermissionError:
-            self.log("CRITICAL", "Permission Denied: Please close 'due list.xlsx' in Microsoft Excel before running the bot!")
+            self.log("CRITICAL", "Permission Denied: Please close the Excel file in MS Excel before running the bot!")
         except Exception as e:
-            self.log("CRITICAL", f"System Exception: {str(e)}")
+            self.log("CRITICAL", f"System Exception: {repr(e)}")
         finally:
             self.is_running = False
             self.start_btn.config(state=tk.NORMAL)
@@ -369,4 +404,3 @@ if __name__ == "__main__":
     root = tk.Tk()
     app = StealthWhatsAppSender(root)
     root.mainloop()
-  
