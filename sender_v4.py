@@ -1,7 +1,6 @@
 import os
 import time
 import uuid
-import base64
 import random
 import threading
 from datetime import datetime
@@ -20,11 +19,11 @@ from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 
 
-class PureJSWhatsAppSenderV4:
+class WhatsAppQRAndTextSenderV5:
     def __init__(self, root):
         self.root = root
-        self.root.title("WhatsApp Fee Sender v4.0 (Pure JS Engine - No Clipboard/Popup)")
-        self.root.geometry("800x630")
+        self.root.title("WhatsApp Fee & QR Sender v5.0 (Verified Photo + Caption Engine)")
+        self.root.geometry("820x640")
 
         self.excel_path = tk.StringVar()
         self.qr_path = tk.StringVar()
@@ -71,15 +70,18 @@ class PureJSWhatsAppSenderV4:
         btn_frame = tk.Frame(frame)
         btn_frame.grid(row=5, column=0, columnspan=2, pady=8)
 
-        self.start_btn = tk.Button(btn_frame, text="▶ Start v4.0 JS Dispatch", bg="#15803d", fg="white", font=("Segoe UI", 10, "bold"), padx=15, pady=5, command=self.start_thread)
-        self.start_btn.pack(side=tk.LEFT, padx=10)
+        self.start_btn = tk.Button(btn_frame, text="▶ Start v5.0 Dispatch (QR + Text)", bg="#15803d", fg="white", font=("Segoe UI", 10, "bold"), padx=12, pady=5, command=self.start_thread)
+        self.start_btn.pack(side=tk.LEFT, padx=8)
 
-        self.stop_btn = tk.Button(btn_frame, text="⏹ Stop & Save Progress", bg="#b91c1c", fg="white", font=("Segoe UI", 10, "bold"), padx=15, pady=5, command=self.stop_sending, state=tk.DISABLED)
-        self.stop_btn.pack(side=tk.LEFT, padx=10)
+        self.stop_btn = tk.Button(btn_frame, text="⏹ Stop", bg="#b91c1c", fg="white", font=("Segoe UI", 10, "bold"), padx=12, pady=5, command=self.stop_sending, state=tk.DISABLED)
+        self.stop_btn.pack(side=tk.LEFT, padx=8)
+
+        self.reset_btn = tk.Button(btn_frame, text="🔄 Reset 'SENT' Status in Excel", bg="#0369a1", fg="white", font=("Segoe UI", 9, "bold"), padx=10, pady=5, command=self.reset_excel_status)
+        self.reset_btn.pack(side=tk.LEFT, padx=8)
 
         # 5. Live System Console
-        tk.Label(frame, text="System Console & Error Logs (v4.0 Engine):", font=("Segoe UI", 10, "bold")).grid(row=6, column=0, sticky="w")
-        self.log_box = scrolledtext.ScrolledText(frame, width=90, height=16, bg="#0f172a", fg="#38bdf8", font=("Consolas", 9))
+        tk.Label(frame, text="System Console & Error Logs (v5.0 Engine):", font=("Segoe UI", 10, "bold")).grid(row=6, column=0, sticky="w")
+        self.log_box = scrolledtext.ScrolledText(frame, width=92, height=16, bg="#0f172a", fg="#4ade80", font=("Consolas", 9))
         self.log_box.grid(row=7, column=0, columnspan=2, pady=5)
 
     def log(self, level, message):
@@ -96,6 +98,20 @@ class PureJSWhatsAppSenderV4:
         path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg *.jpeg *.png")])
         if path:
             self.qr_path.set(path)
+
+    def reset_excel_status(self):
+        excel_file = self.excel_path.get()
+        if not excel_file or not os.path.exists(excel_file):
+            messagebox.showwarning("Warning", "Please select the Excel file first!")
+            return
+        try:
+            df = pd.read_excel(excel_file)
+            df['Delivery_Status'] = ""
+            df['Sent_Timestamp'] = ""
+            df.to_excel(excel_file, index=False)
+            self.log("INFO", "Successfully cleared 'SENT' status for all rows in Excel. Ready to re-send!")
+        except PermissionError:
+            messagebox.showerror("Permission Denied", "Please close the Excel file in MS Excel first!")
 
     def stop_sending(self):
         self.is_running = False
@@ -115,13 +131,12 @@ class PureJSWhatsAppSenderV4:
             self.driver = None
 
     def safe_save_excel(self, df, excel_file):
-        """Saves progress safely even if the Excel file is accidentally open in MS Excel."""
         try:
             df.to_excel(excel_file, index=False)
         except PermissionError:
             backup_file = os.path.splitext(excel_file)[0] + "_status_backup.xlsx"
             df.to_excel(backup_file, index=False)
-            self.log("WARN", f"Excel file is open in MS Excel! Progress saved to '{os.path.basename(backup_file)}' instead.")
+            self.log("WARN", f"Excel open in MS Excel! Saved progress to '{os.path.basename(backup_file)}'.")
 
     def generate_complex_hindi_message(self, row):
         student = str(row['Student name']).strip()
@@ -148,7 +163,7 @@ class PureJSWhatsAppSenderV4:
         ]
 
         ctas = [
-            "आप इस QR कोड को स्कैन करके ऑनलाइन भुगतान कर सकते हैं। भुगतान के बाद कृपया रसीद या स्क्रीनशॉट इसी नंबर पर भेज दें।",
+            "आप ऊपर दिए गए QR कोड को स्कैन करके ऑनलाइन भुगतान कर सकते हैं। भुगतान के बाद कृपया रसीद या स्क्रीनशॉट इसी नंबर पर भेज दें।",
             "कृपया संलग्न QR कोड के माध्यम से बकाया शुल्क जमा करने का कष्ट करें एवं पेमेंट का स्क्रीनशॉट यहाँ शेयर करें।",
             "सुविधा के लिए स्कूल का पेमेंट QR कोड साथ में भेजा जा रहा है। कृपया शुल्क जमा कर स्क्रीनशॉट भेजने की कृपा करें।",
             "कृपया इस मैसेज में दिए गए QR कोड को स्कैन कर फीस जमा करें और कन्फर्मेशन के लिए स्क्रीनशॉट अवश्य भेजें।"
@@ -192,7 +207,7 @@ class PureJSWhatsAppSenderV4:
         return driver
 
     def js_insert_text(self, element, text):
-        """Inserts multi-line Hindi text directly into WhatsApp's Lexical editor via JS."""
+        """Inserts Hindi text cleanly into WhatsApp's Lexical input box."""
         self.driver.execute_script("""
             const el = arguments[0];
             const text = arguments[1];
@@ -206,49 +221,6 @@ class PureJSWhatsAppSenderV4:
             });
             el.dispatchEvent(event);
         """, element, text)
-
-    def js_drop_image_file(self, qr_abs_path):
-        """Injects the image file directly into WhatsApp via synthetic Drag-and-Drop / Paste."""
-        with open(qr_abs_path, "rb") as f:
-            b64_data = base64.b64encode(f.read()).decode('utf-8')
-
-        ext = os.path.splitext(qr_abs_path)[1].lower()
-        mime_type = "image/png" if ext == ".png" else "image/jpeg"
-        filename = os.path.basename(qr_abs_path)
-
-        self.driver.execute_script("""
-            const b64Data = arguments[0];
-            const contentType = arguments[1];
-            const fileName = arguments[2];
-
-            const byteCharacters = atob(b64Data);
-            const byteArrays = [];
-            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-                const slice = byteCharacters.slice(offset, offset + 512);
-                const byteNumbers = new Array(slice.length);
-                for (let i = 0; i < slice.length; i++) {
-                    byteNumbers[i] = slice.charCodeAt(i);
-                }
-                byteArrays.push(new Uint8Array(byteNumbers));
-            }
-            const blob = new Blob(byteArrays, {type: contentType});
-            const file = new File([blob], fileName, {type: contentType, lastModified: new Date().getTime()});
-
-            const dataTransfer = new DataTransfer();
-            dataTransfer.items.add(file);
-
-            // Method 1: Synthetic Paste on active chat box
-            const activeBox = document.querySelector("#main footer div[contenteditable='true']") || document.activeElement;
-            if (activeBox) {
-                activeBox.focus();
-                const pasteEvent = new ClipboardEvent('paste', {
-                     bubbles: true,
-                     cancelable: true,
-                     clipboardData: dataTransfer
-                });
-                activeBox.dispatchEvent(pasteEvent);
-            }
-        """, b64_data, mime_type, filename)
 
     def send_single_message(self, phone, hindi_caption, qr_abs_path):
         url = f"https://web.whatsapp.com/send?phone=91{phone}"
@@ -270,36 +242,78 @@ class PureJSWhatsAppSenderV4:
                 self.driver.find_elements(By.XPATH, "//*[contains(text(), 'अमान्य')]")):
             raise ValueError("Phone number is not registered on WhatsApp.")
 
-        self.human_pause(1.2, 2.0)
+        self.human_pause(1.0, 1.8)
 
-        # STEP 2: Find main message input box & insert Hindi text via pure JS
-        msg_box = self.driver.find_element(By.CSS_SELECTOR, "#main footer div[contenteditable='true']")
-        msg_box.click()
-        self.human_pause(0.5, 1.0)
-        self.js_insert_text(msg_box, hindi_caption)
-        self.human_pause(1.2, 2.0)
-
-        # STEP 3: Inject QR Image directly via JS synthetic paste (No OS clipboard or popup menu needed!)
-        self.js_drop_image_file(qr_abs_path)
-
-        # STEP 4: Wait for Image Preview Modal & Send Button to render
-        self.human_pause(3.0, 4.5)
-
-        send_selectors = (
-            "div[aria-label='Send'], "
-            "button[aria-label='Send'], "
-            "span[data-icon='send'], "
-            "span[data-icon='wds-ic-send-filled']"
+        # STEP 2: Click Attach Button ('+' or Paperclip icon)
+        attach_selectors = (
+            "span[data-icon='plus-rounded'], "
+            "span[data-icon='plus'], "
+            "span[data-icon='attach-menu-plus'], "
+            "span[data-icon='clip'], "
+            "div[title='Attach'], "
+            "button[aria-label='Attach'], "
+            "div[aria-label='Attach']"
         )
         try:
-            send_btn = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, send_selectors)))
-            self.driver.execute_script("arguments[0].click();", send_btn)
+            attach_btn = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, attach_selectors)))
+            self.driver.execute_script("arguments[0].click();", attach_btn)
         except TimeoutException:
-            # Fallback: Press Enter key directly
-            ActionChains(self.driver).send_keys(Keys.ENTER).perform()
+            raise RuntimeError("Step 2 Timeout: Could not find Attach (+ / clip) button.")
 
-        # Wait 4 seconds for image upload to complete
-        self.human_pause(3.8, 5.2)
+        self.human_pause(1.0, 1.6)
+
+        # STEP 3: Select ONLY the 'Photos & videos' file input (which accepts BOTH image AND video, NEVER 'New sticker')
+        file_inputs = self.driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
+        photo_video_input = None
+
+        for inp in file_inputs:
+            accept_attr = (inp.get_attribute("accept") or "").lower()
+            # Crucial fix: 'Photos & videos' has BOTH 'image' AND 'video' (New Sticker only has 'image')
+            if "image" in accept_attr and "video" in accept_attr:
+                photo_video_input = inp
+                break
+
+        if not photo_video_input:
+            raise RuntimeError("Step 3 Error: 'Photos & videos' input[accept*='video'] not found in menu.")
+
+        # Upload qr.jpg into Photos & Videos input
+        photo_video_input.send_keys(qr_abs_path)
+
+        # STEP 4: Wait specifically for the Image Preview Modal's Send Button (OUTSIDE #main footer)
+        modal_send_xpath = (
+            "//*[(@aria-label='Send' or @data-icon='send' or @data-icon='wds-ic-send-filled') "
+            "and not(ancestor::footer)]"
+        )
+        try:
+            modal_send_btn = wait.until(EC.presence_of_element_located((By.XPATH, modal_send_xpath)))
+        except TimeoutException:
+            raise RuntimeError("Step 4 Timeout: QR Image Preview Modal did not open properly.")
+
+        self.human_pause(1.5, 2.5)
+
+        # STEP 5: Locate the 'Add a caption' box inside the Image Preview Modal (excluding left search bar & bottom footer)
+        caption_xpath = (
+            "//div[@contenteditable='true' "
+            "and not(ancestor::*[@id='side']) "
+            "and not(ancestor::footer)]"
+        )
+        caption_boxes = self.driver.find_elements(By.XPATH, caption_xpath)
+        if not caption_boxes:
+            raise RuntimeError("Step 5 Error: Caption input box not found in Image Preview screen.")
+
+        caption_box = caption_boxes[-1]
+        caption_box.click()
+        self.human_pause(0.4, 0.8)
+
+        # Insert the Hindi message directly into the Image Caption Box
+        self.js_insert_text(caption_box, hindi_caption)
+        self.human_pause(1.5, 2.5)
+
+        # STEP 6: Click the Modal Send Button to dispatch QR Image + Hindi Caption together!
+        self.driver.execute_script("arguments[0].click();", modal_send_btn)
+
+        # Wait 4.5 seconds for the image + caption upload to finish completely
+        self.human_pause(4.2, 5.5)
 
     def start_thread(self):
         if not self.excel_path.get() or not os.path.exists(self.excel_path.get()):
@@ -311,6 +325,7 @@ class PureJSWhatsAppSenderV4:
 
         self.is_running = True
         self.start_btn.config(state=tk.DISABLED)
+        self.reset_btn.config(state=tk.DISABLED)
         self.stop_btn.config(state=tk.NORMAL)
 
         threading.Thread(target=self.run_engine, daemon=True).start()
@@ -334,10 +349,10 @@ class PureJSWhatsAppSenderV4:
                 (df['Delivery_Status'].str.upper() != 'SENT')
             ].index.tolist()
 
-            self.log("INFO", f"[v4.0 Engine] Total Rows: {len(df)} | Eligible Pending Rows: {len(pending_indices)}")
+            self.log("INFO", f"[v5.0 Engine] Total Rows: {len(df)} | Eligible Pending Rows: {len(pending_indices)}")
 
             if not pending_indices:
-                self.log("INFO", "All eligible records are already marked as SENT. Nothing to process.")
+                self.log("WARN", "All rows are already marked 'SENT'! Click 'Reset SENT Status in Excel' button to test again.")
                 return
 
             self.log("INFO", "Launching Stealth Chrome Browser...")
@@ -347,7 +362,7 @@ class PureJSWhatsAppSenderV4:
             WebDriverWait(self.driver, 90).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "div[id='pane-side']"))
             )
-            self.log("SUCCESS", "WhatsApp Web ready. Starting Pure-JS dispatch loop (v4.0)...")
+            self.log("SUCCESS", "WhatsApp Web ready. Starting QR + Caption dispatch loop (v5.0)...")
 
             qr_abs_path = os.path.abspath(self.qr_path.get())
             min_d = float(self.min_delay.get())
@@ -376,7 +391,7 @@ class PureJSWhatsAppSenderV4:
                 hindi_msg = self.generate_complex_hindi_message(row)
 
                 try:
-                    self.log("INFO", f"Dispatching -> {student} (Phone: {phone}, Due: INR {amount})...")
+                    self.log("INFO", f"Dispatching QR + Msg -> {student} (Phone: {phone}, Due: INR {amount})...")
                     self.send_single_message(phone, hindi_msg, qr_abs_path)
 
                     sent_in_session += 1
@@ -384,7 +399,7 @@ class PureJSWhatsAppSenderV4:
                     df.at[idx, 'Sent_Timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     self.safe_save_excel(df, excel_file)
 
-                    self.log("SUCCESS", f"Delivered to {student} ({phone}) | Session Count: {sent_in_session}/{len(pending_indices)}")
+                    self.log("SUCCESS", f"Delivered QR + Msg to {student} ({phone}) | Count: {sent_in_session}/{len(pending_indices)}")
 
                     if sent_in_session >= len(pending_indices):
                         break
@@ -420,7 +435,7 @@ class PureJSWhatsAppSenderV4:
                     self.safe_save_excel(df, excel_file)
                     self.human_pause(4, 7)
 
-            self.log("INFO", f"Batch execution finished. Total messages sent in this session: {sent_in_session}")
+            self.log("INFO", f"Batch execution finished. Total QR + messages sent: {sent_in_session}")
 
         except Exception as e:
             self.log("CRITICAL", f"System Exception: {repr(e)}")
@@ -428,10 +443,11 @@ class PureJSWhatsAppSenderV4:
             self.is_running = False
             self.close_driver_safely()
             self.start_btn.config(state=tk.NORMAL)
+            self.reset_btn.config(state=tk.NORMAL)
             self.stop_btn.config(state=tk.DISABLED)
 
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = PureJSWhatsAppSenderV4(root)
+    app = WhatsAppQRAndTextSenderV5(root)
     root.mainloop()
