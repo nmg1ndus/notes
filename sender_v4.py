@@ -1,14 +1,11 @@
 import os
-import io
 import time
 import uuid
+import base64
 import random
 import threading
 from datetime import datetime
 import pandas as pd
-import pyperclip
-from PIL import Image
-import win32clipboard
 import tkinter as tk
 from tkinter import filedialog, messagebox, scrolledtext
 
@@ -23,11 +20,11 @@ from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 
 
-class StealthWhatsAppSenderV3:
+class PureJSWhatsAppSenderV4:
     def __init__(self, root):
         self.root = root
-        self.root.title("Stealth WhatsApp Fee Sender (Zero-Popup Engine v3.0)")
-        self.root.geometry("780x620")
+        self.root.title("WhatsApp Fee Sender v4.0 (Pure JS Engine - No Clipboard/Popup)")
+        self.root.geometry("800x630")
 
         self.excel_path = tk.StringVar()
         self.qr_path = tk.StringVar()
@@ -43,12 +40,12 @@ class StealthWhatsAppSenderV3:
 
         # 1. Excel Selection
         tk.Label(frame, text="1. Select Excel File (due list.xlsx):", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w")
-        tk.Entry(frame, textvariable=self.excel_path, width=58).grid(row=1, column=0, pady=5, padx=(0, 10))
+        tk.Entry(frame, textvariable=self.excel_path, width=60).grid(row=1, column=0, pady=5, padx=(0, 10))
         tk.Button(frame, text="Browse Excel", width=14, command=self.select_excel).grid(row=1, column=1)
 
         # 2. QR Selection
         tk.Label(frame, text="2. Select Payment QR Image (qr.jpg):", font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky="w", pady=(10, 0))
-        tk.Entry(frame, textvariable=self.qr_path, width=58).grid(row=3, column=0, pady=5, padx=(0, 10))
+        tk.Entry(frame, textvariable=self.qr_path, width=60).grid(row=3, column=0, pady=5, padx=(0, 10))
         tk.Button(frame, text="Browse QR", width=14, command=self.select_qr).grid(row=3, column=1)
 
         # 3. Anti-Ban Timing Parameters
@@ -62,7 +59,7 @@ class StealthWhatsAppSenderV3:
 
         tk.Label(cfg_frame, text="Max Delay (s):").grid(row=0, column=2, sticky="w")
         self.max_delay = tk.Entry(cfg_frame, width=6)
-        self.max_delay.insert(0, "42")
+        self.max_delay.insert(0, "40")
         self.max_delay.grid(row=0, column=3, padx=(5, 15))
 
         tk.Label(cfg_frame, text="Micro-Break Every (msgs):").grid(row=0, column=4, sticky="w")
@@ -74,15 +71,15 @@ class StealthWhatsAppSenderV3:
         btn_frame = tk.Frame(frame)
         btn_frame.grid(row=5, column=0, columnspan=2, pady=8)
 
-        self.start_btn = tk.Button(btn_frame, text="▶ Start Stealth Dispatch", bg="#15803d", fg="white", font=("Segoe UI", 10, "bold"), padx=15, pady=5, command=self.start_thread)
+        self.start_btn = tk.Button(btn_frame, text="▶ Start v4.0 JS Dispatch", bg="#15803d", fg="white", font=("Segoe UI", 10, "bold"), padx=15, pady=5, command=self.start_thread)
         self.start_btn.pack(side=tk.LEFT, padx=10)
 
         self.stop_btn = tk.Button(btn_frame, text="⏹ Stop & Save Progress", bg="#b91c1c", fg="white", font=("Segoe UI", 10, "bold"), padx=15, pady=5, command=self.stop_sending, state=tk.DISABLED)
         self.stop_btn.pack(side=tk.LEFT, padx=10)
 
-        # 5. Live System Console (English)
-        tk.Label(frame, text="System Console & Error Logs:", font=("Segoe UI", 10, "bold")).grid(row=6, column=0, sticky="w")
-        self.log_box = scrolledtext.ScrolledText(frame, width=88, height=16, bg="#0f172a", fg="#e2e8f0", font=("Consolas", 9))
+        # 5. Live System Console
+        tk.Label(frame, text="System Console & Error Logs (v4.0 Engine):", font=("Segoe UI", 10, "bold")).grid(row=6, column=0, sticky="w")
+        self.log_box = scrolledtext.ScrolledText(frame, width=90, height=16, bg="#0f172a", fg="#38bdf8", font=("Consolas", 9))
         self.log_box.grid(row=7, column=0, columnspan=2, pady=5)
 
     def log(self, level, message):
@@ -102,7 +99,7 @@ class StealthWhatsAppSenderV3:
 
     def stop_sending(self):
         self.is_running = False
-        self.log("WARN", "Stop signal received. Halting safely after the current operation...")
+        self.log("WARN", "Stop signal received. Halting safely after current contact...")
 
     def on_close(self):
         self.is_running = False
@@ -117,21 +114,14 @@ class StealthWhatsAppSenderV3:
                 pass
             self.driver = None
 
-    @staticmethod
-    def copy_image_to_clipboard(image_path):
-        """Copies an image file directly to the Windows system clipboard as CF_DIB."""
-        image = Image.open(image_path)
-        output = io.BytesIO()
-        image.convert("RGB").save(output, "BMP")
-        data = output.getvalue()[14:]  # Strip 14-byte BMP header for CF_DIB format
-        output.close()
-
-        win32clipboard.OpenClipboard()
+    def safe_save_excel(self, df, excel_file):
+        """Saves progress safely even if the Excel file is accidentally open in MS Excel."""
         try:
-            win32clipboard.EmptyClipboard()
-            win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
-        finally:
-            win32clipboard.CloseClipboard()
+            df.to_excel(excel_file, index=False)
+        except PermissionError:
+            backup_file = os.path.splitext(excel_file)[0] + "_status_backup.xlsx"
+            df.to_excel(backup_file, index=False)
+            self.log("WARN", f"Excel file is open in MS Excel! Progress saved to '{os.path.basename(backup_file)}' instead.")
 
     def generate_complex_hindi_message(self, row):
         student = str(row['Student name']).strip()
@@ -158,7 +148,7 @@ class StealthWhatsAppSenderV3:
         ]
 
         ctas = [
-            "आप ऊपर दिए गए QR कोड को स्कैन करके ऑनलाइन भुगतान कर सकते हैं। भुगतान के बाद कृपया रसीद या स्क्रीनशॉट इसी नंबर पर भेज दें।",
+            "आप इस QR कोड को स्कैन करके ऑनलाइन भुगतान कर सकते हैं। भुगतान के बाद कृपया रसीद या स्क्रीनशॉट इसी नंबर पर भेज दें।",
             "कृपया संलग्न QR कोड के माध्यम से बकाया शुल्क जमा करने का कष्ट करें एवं पेमेंट का स्क्रीनशॉट यहाँ शेयर करें।",
             "सुविधा के लिए स्कूल का पेमेंट QR कोड साथ में भेजा जा रहा है। कृपया शुल्क जमा कर स्क्रीनशॉट भेजने की कृपा करें।",
             "कृपया इस मैसेज में दिए गए QR कोड को स्कैन कर फीस जमा करें और कन्फर्मेशन के लिए स्क्रीनशॉट अवश्य भेजें।"
@@ -166,8 +156,8 @@ class StealthWhatsAppSenderV3:
 
         closings = [
             "सहयोग के लिए धन्यवाद।",
-            "सादर धन्यवाद,\nविद्यालय प्रशासन",
-            "धन्यवाद,\nलेखा विभाग (Accounts Office)",
+            "सादर धन्यवाद, विद्यालय प्रशासन",
+            "धन्यवाद, लेखा विभाग (Accounts Office)",
             "आपके सहयोग हेतु धन्यवाद।"
         ]
 
@@ -178,18 +168,15 @@ class StealthWhatsAppSenderV3:
             f"{random.choice(greetings)},\n\n"
             f"{random.choice(bodies)}{zwsp}\n\n"
             f"{random.choice(ctas)}\n\n"
-            f"{random.choice(closings)}\n"
-            f"_(Ref: #{ref_token})_"
+            f"{random.choice(closings)} (Ref: #{ref_token})"
         )
         return msg
 
-    def human_pause(self, min_sec=0.8, max_sec=2.0):
+    def human_pause(self, min_sec=0.8, max_sec=1.8):
         time.sleep(random.uniform(min_sec, max_sec))
 
     def init_stealth_browser(self):
-        # Always close any leftover driver instance from previous runs
         self.close_driver_safely()
-
         session_dir = os.path.abspath("./whatsapp_stealth_session")
         options = webdriver.ChromeOptions()
         options.add_argument(f"--user-data-dir={session_dir}")
@@ -204,13 +191,72 @@ class StealthWhatsAppSenderV3:
         })
         return driver
 
+    def js_insert_text(self, element, text):
+        """Inserts multi-line Hindi text directly into WhatsApp's Lexical editor via JS."""
+        self.driver.execute_script("""
+            const el = arguments[0];
+            const text = arguments[1];
+            el.focus();
+            const dataTransfer = new DataTransfer();
+            dataTransfer.setData('text/plain', text);
+            const event = new ClipboardEvent('paste', {
+                clipboardData: dataTransfer,
+                bubbles: true,
+                cancelable: true
+            });
+            el.dispatchEvent(event);
+        """, element, text)
+
+    def js_drop_image_file(self, qr_abs_path):
+        """Injects the image file directly into WhatsApp via synthetic Drag-and-Drop / Paste."""
+        with open(qr_abs_path, "rb") as f:
+            b64_data = base64.b64encode(f.read()).decode('utf-8')
+
+        ext = os.path.splitext(qr_abs_path)[1].lower()
+        mime_type = "image/png" if ext == ".png" else "image/jpeg"
+        filename = os.path.basename(qr_abs_path)
+
+        self.driver.execute_script("""
+            const b64Data = arguments[0];
+            const contentType = arguments[1];
+            const fileName = arguments[2];
+
+            const byteCharacters = atob(b64Data);
+            const byteArrays = [];
+            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+                const slice = byteCharacters.slice(offset, offset + 512);
+                const byteNumbers = new Array(slice.length);
+                for (let i = 0; i < slice.length; i++) {
+                    byteNumbers[i] = slice.charCodeAt(i);
+                }
+                byteArrays.push(new Uint8Array(byteNumbers));
+            }
+            const blob = new Blob(byteArrays, {type: contentType});
+            const file = new File([blob], fileName, {type: contentType, lastModified: new Date().getTime()});
+
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+
+            // Method 1: Synthetic Paste on active chat box
+            const activeBox = document.querySelector("#main footer div[contenteditable='true']") || document.activeElement;
+            if (activeBox) {
+                activeBox.focus();
+                const pasteEvent = new ClipboardEvent('paste', {
+                     bubbles: true,
+                     cancelable: true,
+                     clipboardData: dataTransfer
+                });
+                activeBox.dispatchEvent(pasteEvent);
+            }
+        """, b64_data, mime_type, filename)
+
     def send_single_message(self, phone, hindi_caption, qr_abs_path):
         url = f"https://web.whatsapp.com/send?phone=91{phone}"
         self.driver.get(url)
 
-        wait = WebDriverWait(self.driver, 35)
+        wait = WebDriverWait(self.driver, 40)
 
-        # STEP 1: Wait for chat message box (#main footer) or Invalid Number popup
+        # STEP 1: Wait for chat footer OR Invalid Phone Number alert
         try:
             wait.until(lambda d: (
                 len(d.find_elements(By.CSS_SELECTOR, "#main footer div[contenteditable='true']")) > 0 or
@@ -218,54 +264,42 @@ class StealthWhatsAppSenderV3:
                 len(d.find_elements(By.XPATH, "//*[contains(text(), 'अमान्य')]")) > 0
             ))
         except TimeoutException:
-            raise RuntimeError("Step 1 Timeout: Chat window did not load within 35s.")
+            raise RuntimeError("Step 1 Timeout: Chat box did not load within 40 seconds.")
 
         if (self.driver.find_elements(By.XPATH, "//*[contains(text(), 'Phone number shared via url is invalid')]") or
                 self.driver.find_elements(By.XPATH, "//*[contains(text(), 'अमान्य')]")):
             raise ValueError("Phone number is not registered on WhatsApp.")
 
-        self.human_pause(1.0, 1.8)
+        self.human_pause(1.2, 2.0)
 
-        # STEP 2: Click main chat text box & Paste Hindi Message first
-        # (When you type text in WhatsApp and then paste an image, WhatsApp automatically moves the text into the image caption!)
-        msg_box = wait.until(EC.element_to_be_clickable((
-            By.CSS_SELECTOR, "#main footer div[contenteditable='true']"
-        )))
+        # STEP 2: Find main message input box & insert Hindi text via pure JS
+        msg_box = self.driver.find_element(By.CSS_SELECTOR, "#main footer div[contenteditable='true']")
         msg_box.click()
-        self.human_pause(0.4, 0.9)
-
-        pyperclip.copy(hindi_caption)
-        ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
-        self.human_pause(1.2, 2.2)
-
-        # STEP 3: Copy QR Image to Clipboard & Paste directly via Ctrl+V (Zero Popups!)
-        self.copy_image_to_clipboard(qr_abs_path)
         self.human_pause(0.5, 1.0)
-        ActionChains(self.driver).key_down(Keys.CONTROL).send_keys('v').key_up(Keys.CONTROL).perform()
+        self.js_insert_text(msg_box, hindi_caption)
+        self.human_pause(1.2, 2.0)
 
-        # STEP 4: Wait for Image Preview Screen to render (Wait for the 'x' close icon or green send icon)
-        self.human_pause(2.8, 4.2)
+        # STEP 3: Inject QR Image directly via JS synthetic paste (No OS clipboard or popup menu needed!)
+        self.js_drop_image_file(qr_abs_path)
 
-        # STEP 5: Dispatch via ENTER key (Primary) + Green Send Button Click (Fallback)
-        ActionChains(self.driver).send_keys(Keys.ENTER).perform()
-        self.human_pause(1.0, 1.5)
+        # STEP 4: Wait for Image Preview Modal & Send Button to render
+        self.human_pause(3.0, 4.5)
 
-        # Verify if preview modal is still open; if yes, click the green Send button directly
         send_selectors = (
             "div[aria-label='Send'], "
             "button[aria-label='Send'], "
             "span[data-icon='send'], "
             "span[data-icon='wds-ic-send-filled']"
         )
-        remaining_send_btns = self.driver.find_elements(By.CSS_SELECTOR, send_selectors)
-        if remaining_send_btns:
-            try:
-                self.driver.execute_script("arguments[0].click();", remaining_send_btns[-1])
-            except Exception:
-                pass
+        try:
+            send_btn = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, send_selectors)))
+            self.driver.execute_script("arguments[0].click();", send_btn)
+        except TimeoutException:
+            # Fallback: Press Enter key directly
+            ActionChains(self.driver).send_keys(Keys.ENTER).perform()
 
-        # Wait 3.5 seconds so the image upload finishes completely before navigating to next number
-        self.human_pause(3.5, 5.0)
+        # Wait 4 seconds for image upload to complete
+        self.human_pause(3.8, 5.2)
 
     def start_thread(self):
         if not self.excel_path.get() or not os.path.exists(self.excel_path.get()):
@@ -300,20 +334,20 @@ class StealthWhatsAppSenderV3:
                 (df['Delivery_Status'].str.upper() != 'SENT')
             ].index.tolist()
 
-            self.log("INFO", f"Total Rows: {len(df)} | Eligible Pending Rows (Amount > 0 & Unsent): {len(pending_indices)}")
+            self.log("INFO", f"[v4.0 Engine] Total Rows: {len(df)} | Eligible Pending Rows: {len(pending_indices)}")
 
             if not pending_indices:
                 self.log("INFO", "All eligible records are already marked as SENT. Nothing to process.")
                 return
 
-            self.log("INFO", "Launching Stealth Chrome Browser... Please scan QR if not logged in.")
+            self.log("INFO", "Launching Stealth Chrome Browser...")
             self.driver = self.init_stealth_browser()
             self.driver.get("https://web.whatsapp.com")
 
             WebDriverWait(self.driver, 90).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "div[id='pane-side']"))
             )
-            self.log("SUCCESS", "WhatsApp Web authenticated. Starting zero-popup dispatch loop...")
+            self.log("SUCCESS", "WhatsApp Web ready. Starting Pure-JS dispatch loop (v4.0)...")
 
             qr_abs_path = os.path.abspath(self.qr_path.get())
             min_d = float(self.min_delay.get())
@@ -336,7 +370,7 @@ class StealthWhatsAppSenderV3:
                 if len(phone) != 10:
                     self.log("ERROR", f"Row {idx+2} ({student}): Invalid 10-digit number '{raw_phone}'. Skipping.")
                     df.at[idx, 'Delivery_Status'] = "INVALID_NUMBER"
-                    df.to_excel(excel_file, index=False)
+                    self.safe_save_excel(df, excel_file)
                     continue
 
                 hindi_msg = self.generate_complex_hindi_message(row)
@@ -348,7 +382,7 @@ class StealthWhatsAppSenderV3:
                     sent_in_session += 1
                     df.at[idx, 'Delivery_Status'] = "SENT"
                     df.at[idx, 'Sent_Timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    df.to_excel(excel_file, index=False)
+                    self.safe_save_excel(df, excel_file)
 
                     self.log("SUCCESS", f"Delivered to {student} ({phone}) | Session Count: {sent_in_session}/{len(pending_indices)}")
 
@@ -376,20 +410,18 @@ class StealthWhatsAppSenderV3:
                 except ValueError as ve:
                     self.log("ERROR", f"Skipped {student} ({phone}): {str(ve)}")
                     df.at[idx, 'Delivery_Status'] = "NOT_ON_WHATSAPP"
-                    df.to_excel(excel_file, index=False)
-                    self.human_pause(3, 6)
+                    self.safe_save_excel(df, excel_file)
+                    self.human_pause(3, 5)
 
                 except Exception as ex:
                     err_msg = str(ex).splitlines()[0] if str(ex).strip() else repr(ex)
                     self.log("ERROR", f"Failed for {student} ({phone}) | {err_msg}")
                     df.at[idx, 'Delivery_Status'] = "FAILED_RETRY"
-                    df.to_excel(excel_file, index=False)
-                    self.human_pause(4, 8)
+                    self.safe_save_excel(df, excel_file)
+                    self.human_pause(4, 7)
 
             self.log("INFO", f"Batch execution finished. Total messages sent in this session: {sent_in_session}")
 
-        except PermissionError:
-            self.log("CRITICAL", "Permission Denied: Please close the Excel file in MS Excel before running the bot!")
         except Exception as e:
             self.log("CRITICAL", f"System Exception: {repr(e)}")
         finally:
@@ -401,5 +433,5 @@ class StealthWhatsAppSenderV3:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = StealthWhatsAppSenderV3(root)
+    app = PureJSWhatsAppSenderV4(root)
     root.mainloop()
