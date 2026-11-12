@@ -3,6 +3,7 @@ import time
 import uuid
 import random
 import threading
+import urllib.parse
 from datetime import datetime
 import pandas as pd
 import tkinter as tk
@@ -19,14 +20,15 @@ from selenium.common.exceptions import TimeoutException
 from webdriver_manager.chrome import ChromeDriverManager
 
 
-class WhatsAppQRAndTextSenderV5:
+class PureJSWhatsAppUPISenderV4:
     def __init__(self, root):
         self.root = root
-        self.root.title("WhatsApp Fee & QR Sender v5.0 (Verified Photo + Caption Engine)")
-        self.root.geometry("820x640")
+        self.root.title("WhatsApp Fee Sender v4.1 (Pure JS + Fixed Amount UPI Link)")
+        self.root.geometry("820x630")
 
         self.excel_path = tk.StringVar()
-        self.qr_path = tk.StringVar()
+        self.upi_id = tk.StringVar(value="MSVIHANVIDYAPEETH.eazypay@icici")
+        self.payee_name = tk.StringVar(value="Vihan Vidyapeeth")
         self.is_running = False
         self.driver = None
 
@@ -39,26 +41,31 @@ class WhatsAppQRAndTextSenderV5:
 
         # 1. Excel Selection
         tk.Label(frame, text="1. Select Excel File (due list.xlsx):", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w")
-        tk.Entry(frame, textvariable=self.excel_path, width=60).grid(row=1, column=0, pady=5, padx=(0, 10))
-        tk.Button(frame, text="Browse Excel", width=14, command=self.select_excel).grid(row=1, column=1)
+        tk.Entry(frame, textvariable=self.excel_path, width=62).grid(row=1, column=0, pady=5, padx=(0, 10), sticky="w")
+        tk.Button(frame, text="Browse Excel", width=15, command=self.select_excel).grid(row=1, column=1)
 
-        # 2. QR Selection
-        tk.Label(frame, text="2. Select Payment QR Image (qr.jpg):", font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky="w", pady=(10, 0))
-        tk.Entry(frame, textvariable=self.qr_path, width=60).grid(row=3, column=0, pady=5, padx=(0, 10))
-        tk.Button(frame, text="Browse QR", width=14, command=self.select_qr).grid(row=3, column=1)
+        # 2. UPI Configuration
+        upi_frame = tk.LabelFrame(frame, text="2. School UPI Payment Configuration", font=("Segoe UI", 9, "bold"), padx=10, pady=8)
+        upi_frame.grid(row=2, column=0, columnspan=2, sticky="we", pady=8)
+
+        tk.Label(upi_frame, text="Merchant UPI ID:").grid(row=0, column=0, sticky="w")
+        tk.Entry(upi_frame, textvariable=self.upi_id, width=38, font=("Consolas", 10, "bold")).grid(row=0, column=1, padx=(5, 15))
+
+        tk.Label(upi_frame, text="School / Payee Name:").grid(row=0, column=2, sticky="w")
+        tk.Entry(upi_frame, textvariable=self.payee_name, width=22).grid(row=0, column=3, padx=5)
 
         # 3. Anti-Ban Timing Parameters
-        cfg_frame = tk.LabelFrame(frame, text="Anti-Ban Stealth Parameters", font=("Segoe UI", 9, "bold"), padx=10, pady=8)
-        cfg_frame.grid(row=4, column=0, columnspan=2, sticky="we", pady=10)
+        cfg_frame = tk.LabelFrame(frame, text="3. Anti-Ban Stealth Parameters", font=("Segoe UI", 9, "bold"), padx=10, pady=8)
+        cfg_frame.grid(row=3, column=0, columnspan=2, sticky="we", pady=8)
 
         tk.Label(cfg_frame, text="Min Delay (s):").grid(row=0, column=0, sticky="w")
         self.min_delay = tk.Entry(cfg_frame, width=6)
-        self.min_delay.insert(0, "20")
+        self.min_delay.insert(0, "18")
         self.min_delay.grid(row=0, column=1, padx=(5, 15))
 
         tk.Label(cfg_frame, text="Max Delay (s):").grid(row=0, column=2, sticky="w")
         self.max_delay = tk.Entry(cfg_frame, width=6)
-        self.max_delay.insert(0, "40")
+        self.max_delay.insert(0, "38")
         self.max_delay.grid(row=0, column=3, padx=(5, 15))
 
         tk.Label(cfg_frame, text="Micro-Break Every (msgs):").grid(row=0, column=4, sticky="w")
@@ -68,21 +75,21 @@ class WhatsAppQRAndTextSenderV5:
 
         # 4. Action Buttons
         btn_frame = tk.Frame(frame)
-        btn_frame.grid(row=5, column=0, columnspan=2, pady=8)
+        btn_frame.grid(row=4, column=0, columnspan=2, pady=8)
 
-        self.start_btn = tk.Button(btn_frame, text="▶ Start v5.0 Dispatch (QR + Text)", bg="#15803d", fg="white", font=("Segoe UI", 10, "bold"), padx=12, pady=5, command=self.start_thread)
+        self.start_btn = tk.Button(btn_frame, text="▶ Start v4.1 UPI Dispatch", bg="#15803d", fg="white", font=("Segoe UI", 10, "bold"), padx=14, pady=5, command=self.start_thread)
         self.start_btn.pack(side=tk.LEFT, padx=8)
 
-        self.stop_btn = tk.Button(btn_frame, text="⏹ Stop", bg="#b91c1c", fg="white", font=("Segoe UI", 10, "bold"), padx=12, pady=5, command=self.stop_sending, state=tk.DISABLED)
+        self.stop_btn = tk.Button(btn_frame, text="⏹ Stop & Save", bg="#b91c1c", fg="white", font=("Segoe UI", 10, "bold"), padx=14, pady=5, command=self.stop_sending, state=tk.DISABLED)
         self.stop_btn.pack(side=tk.LEFT, padx=8)
 
         self.reset_btn = tk.Button(btn_frame, text="🔄 Reset 'SENT' Status in Excel", bg="#0369a1", fg="white", font=("Segoe UI", 9, "bold"), padx=10, pady=5, command=self.reset_excel_status)
         self.reset_btn.pack(side=tk.LEFT, padx=8)
 
         # 5. Live System Console
-        tk.Label(frame, text="System Console & Error Logs (v5.0 Engine):", font=("Segoe UI", 10, "bold")).grid(row=6, column=0, sticky="w")
-        self.log_box = scrolledtext.ScrolledText(frame, width=92, height=16, bg="#0f172a", fg="#4ade80", font=("Consolas", 9))
-        self.log_box.grid(row=7, column=0, columnspan=2, pady=5)
+        tk.Label(frame, text="System Console & Error Logs (v4.1 UPI Link Engine):", font=("Segoe UI", 10, "bold")).grid(row=5, column=0, sticky="w")
+        self.log_box = scrolledtext.ScrolledText(frame, width=92, height=16, bg="#0f172a", fg="#38bdf8", font=("Consolas", 9))
+        self.log_box.grid(row=6, column=0, columnspan=2, pady=5)
 
     def log(self, level, message):
         ts = datetime.now().strftime("%H:%M:%S")
@@ -94,11 +101,6 @@ class WhatsAppQRAndTextSenderV5:
         if path:
             self.excel_path.set(path)
 
-    def select_qr(self):
-        path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg *.jpeg *.png")])
-        if path:
-            self.qr_path.set(path)
-
     def reset_excel_status(self):
         excel_file = self.excel_path.get()
         if not excel_file or not os.path.exists(excel_file):
@@ -109,9 +111,9 @@ class WhatsAppQRAndTextSenderV5:
             df['Delivery_Status'] = ""
             df['Sent_Timestamp'] = ""
             df.to_excel(excel_file, index=False)
-            self.log("INFO", "Successfully cleared 'SENT' status for all rows in Excel. Ready to re-send!")
+            self.log("INFO", "Cleared 'SENT' status for all rows in Excel. Ready for fresh dispatch!")
         except PermissionError:
-            messagebox.showerror("Permission Denied", "Please close the Excel file in MS Excel first!")
+            messagebox.showerror("Permission Denied", "Please close 'due list.xlsx' in Microsoft Excel first!")
 
     def stop_sending(self):
         self.is_running = False
@@ -136,7 +138,17 @@ class WhatsAppQRAndTextSenderV5:
         except PermissionError:
             backup_file = os.path.splitext(excel_file)[0] + "_status_backup.xlsx"
             df.to_excel(backup_file, index=False)
-            self.log("WARN", f"Excel open in MS Excel! Saved progress to '{os.path.basename(backup_file)}'.")
+            self.log("WARN", f"Excel open in MS Excel! Progress saved to '{os.path.basename(backup_file)}'.")
+
+    def build_upi_link(self, amount, reg_no, student_name):
+        """Builds a fixed-amount UPI payment link with student Reg No in the transaction note."""
+        pa = self.upi_id.get().strip()
+        pn = urllib.parse.quote(self.payee_name.get().strip())
+        clean_student = "".join(e for e in student_name if e.isalnum())[:10]
+        tn = urllib.parse.quote(f"Fee Reg {reg_no} {clean_student}")
+        # Fixed amount formatted to 2 decimal places as required by UPI specs
+        am = f"{float(amount):.2f}"
+        return f"upi://pay?pa={pa}&pn={pn}&am={am}&cu=INR&tn={tn}"
 
     def generate_complex_hindi_message(self, row):
         student = str(row['Student name']).strip()
@@ -146,6 +158,9 @@ class WhatsAppQRAndTextSenderV5:
         sec = str(row['sec']).strip()
         month = str(row['month']).strip()
         amount = int(float(row['amount']))
+
+        upi_id_str = self.upi_id.get().strip()
+        upi_deep_link = self.build_upi_link(amount, reg_no, student)
 
         greetings = [
             f"नमस्ते {father} जी",
@@ -163,10 +178,9 @@ class WhatsAppQRAndTextSenderV5:
         ]
 
         ctas = [
-            "आप ऊपर दिए गए QR कोड को स्कैन करके ऑनलाइन भुगतान कर सकते हैं। भुगतान के बाद कृपया रसीद या स्क्रीनशॉट इसी नंबर पर भेज दें।",
-            "कृपया संलग्न QR कोड के माध्यम से बकाया शुल्क जमा करने का कष्ट करें एवं पेमेंट का स्क्रीनशॉट यहाँ शेयर करें।",
-            "सुविधा के लिए स्कूल का पेमेंट QR कोड साथ में भेजा जा रहा है। कृपया शुल्क जमा कर स्क्रीनशॉट भेजने की कृपा करें।",
-            "कृपया इस मैसेज में दिए गए QR कोड को स्कैन कर फीस जमा करें और कन्फर्मेशन के लिए स्क्रीनशॉट अवश्य भेजें।"
+            f"आप नीचे दिए गए पेमेंट लिंक या स्कूल की आधिकारिक UPI ID के माध्यम से सीधे *₹{amount}* का ऑनलाइन भुगतान कर सकते हैं:\n\n🔗 *पेमेंट लिंक (₹{amount}):*\n{upi_deep_link}\n\n🏦 *School UPI ID:*\n{upi_id_str}\n\nभुगतान के बाद कृपया रसीद या स्क्रीनशॉट इसी नंबर पर भेज दें।",
+            f"कृपया नीचे दिए गए UPI लिंक या UPI ID पर *₹{amount}* की बकाया फीस जमा करने का कष्ट करें एवं पेमेंट का स्क्रीनशॉट यहाँ शेयर करें:\n\n💳 *Direct Pay Link (₹{amount}):*\n{upi_deep_link}\n\n📌 *UPI ID:* {upi_id_str}",
+            f"सुविधा के लिए स्कूल का फिक्स्ड अमाउंट (*₹{amount}*) पेमेंट लिंक नीचे दिया गया है। कृपया शुल्क जमा कर स्क्रीनशॉट भेजने की कृपा करें:\n\n👉 *UPI Pay Link:*\n{upi_deep_link}\n\n🏦 *Official UPI ID:* {upi_id_str}"
         ]
 
         closings = [
@@ -207,7 +221,7 @@ class WhatsAppQRAndTextSenderV5:
         return driver
 
     def js_insert_text(self, element, text):
-        """Inserts Hindi text cleanly into WhatsApp's Lexical input box."""
+        """Inserts multi-line Hindi text & UPI link directly into WhatsApp's Lexical editor via JS."""
         self.driver.execute_script("""
             const el = arguments[0];
             const text = arguments[1];
@@ -222,7 +236,7 @@ class WhatsAppQRAndTextSenderV5:
             el.dispatchEvent(event);
         """, element, text)
 
-    def send_single_message(self, phone, hindi_caption, qr_abs_path):
+    def send_single_message(self, phone, hindi_message):
         url = f"https://web.whatsapp.com/send?phone=91{phone}"
         self.driver.get(url)
 
@@ -244,83 +258,35 @@ class WhatsAppQRAndTextSenderV5:
 
         self.human_pause(1.0, 1.8)
 
-        # STEP 2: Click Attach Button ('+' or Paperclip icon)
-        attach_selectors = (
-            "span[data-icon='plus-rounded'], "
-            "span[data-icon='plus'], "
-            "span[data-icon='attach-menu-plus'], "
-            "span[data-icon='clip'], "
-            "div[title='Attach'], "
-            "button[aria-label='Attach'], "
-            "div[aria-label='Attach']"
+        # STEP 2: Find main message input box & insert Hindi text + UPI link via pure JS
+        msg_box = self.driver.find_element(By.CSS_SELECTOR, "#main footer div[contenteditable='true']")
+        msg_box.click()
+        self.human_pause(0.4, 0.9)
+        self.js_insert_text(msg_box, hindi_message)
+        self.human_pause(1.0, 1.8)
+
+        # STEP 3: Click Send button in footer (or press Enter)
+        send_selectors = (
+            "#main footer button[aria-label='Send'], "
+            "#main footer div[aria-label='Send'], "
+            "#main footer span[data-icon='send'], "
+            "#main footer span[data-icon='wds-ic-send-filled']"
         )
-        try:
-            attach_btn = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, attach_selectors)))
-            self.driver.execute_script("arguments[0].click();", attach_btn)
-        except TimeoutException:
-            raise RuntimeError("Step 2 Timeout: Could not find Attach (+ / clip) button.")
+        send_btns = self.driver.find_elements(By.CSS_SELECTOR, send_selectors)
+        if send_btns:
+            self.driver.execute_script("arguments[0].click();", send_btns[-1])
+        else:
+            ActionChains(self.driver).send_keys(Keys.ENTER).perform()
 
-        self.human_pause(1.0, 1.6)
-
-        # STEP 3: Select ONLY the 'Photos & videos' file input (which accepts BOTH image AND video, NEVER 'New sticker')
-        file_inputs = self.driver.find_elements(By.CSS_SELECTOR, "input[type='file']")
-        photo_video_input = None
-
-        for inp in file_inputs:
-            accept_attr = (inp.get_attribute("accept") or "").lower()
-            # Crucial fix: 'Photos & videos' has BOTH 'image' AND 'video' (New Sticker only has 'image')
-            if "image" in accept_attr and "video" in accept_attr:
-                photo_video_input = inp
-                break
-
-        if not photo_video_input:
-            raise RuntimeError("Step 3 Error: 'Photos & videos' input[accept*='video'] not found in menu.")
-
-        # Upload qr.jpg into Photos & Videos input
-        photo_video_input.send_keys(qr_abs_path)
-
-        # STEP 4: Wait specifically for the Image Preview Modal's Send Button (OUTSIDE #main footer)
-        modal_send_xpath = (
-            "//*[(@aria-label='Send' or @data-icon='send' or @data-icon='wds-ic-send-filled') "
-            "and not(ancestor::footer)]"
-        )
-        try:
-            modal_send_btn = wait.until(EC.presence_of_element_located((By.XPATH, modal_send_xpath)))
-        except TimeoutException:
-            raise RuntimeError("Step 4 Timeout: QR Image Preview Modal did not open properly.")
-
-        self.human_pause(1.5, 2.5)
-
-        # STEP 5: Locate the 'Add a caption' box inside the Image Preview Modal (excluding left search bar & bottom footer)
-        caption_xpath = (
-            "//div[@contenteditable='true' "
-            "and not(ancestor::*[@id='side']) "
-            "and not(ancestor::footer)]"
-        )
-        caption_boxes = self.driver.find_elements(By.XPATH, caption_xpath)
-        if not caption_boxes:
-            raise RuntimeError("Step 5 Error: Caption input box not found in Image Preview screen.")
-
-        caption_box = caption_boxes[-1]
-        caption_box.click()
-        self.human_pause(0.4, 0.8)
-
-        # Insert the Hindi message directly into the Image Caption Box
-        self.js_insert_text(caption_box, hindi_caption)
-        self.human_pause(1.5, 2.5)
-
-        # STEP 6: Click the Modal Send Button to dispatch QR Image + Hindi Caption together!
-        self.driver.execute_script("arguments[0].click();", modal_send_btn)
-
-        # Wait 4.5 seconds for the image + caption upload to finish completely
-        self.human_pause(4.2, 5.5)
+        # Wait 2.5 seconds to confirm message dispatch before moving to next number
+        self.human_pause(2.5, 3.8)
 
     def start_thread(self):
         if not self.excel_path.get() or not os.path.exists(self.excel_path.get()):
             messagebox.showerror("Validation Error", "Please select a valid Excel (.xlsx) file.")
             return
-        if not self.qr_path.get() or not os.path.exists(self.qr_path.get()):
-            messagebox.showerror("Validation Error", "Please select a valid QR Image (.jpg/.png) file.")
+        if not self.upi_id.get().strip():
+            messagebox.showerror("Validation Error", "Please enter a valid School UPI ID.")
             return
 
         self.is_running = True
@@ -349,10 +315,10 @@ class WhatsAppQRAndTextSenderV5:
                 (df['Delivery_Status'].str.upper() != 'SENT')
             ].index.tolist()
 
-            self.log("INFO", f"[v5.0 Engine] Total Rows: {len(df)} | Eligible Pending Rows: {len(pending_indices)}")
+            self.log("INFO", f"[v4.1 UPI Engine] Total Rows: {len(df)} | Eligible Pending Rows: {len(pending_indices)}")
 
             if not pending_indices:
-                self.log("WARN", "All rows are already marked 'SENT'! Click 'Reset SENT Status in Excel' button to test again.")
+                self.log("WARN", "All eligible rows are already marked 'SENT'! Click 'Reset SENT Status' button to resend.")
                 return
 
             self.log("INFO", "Launching Stealth Chrome Browser...")
@@ -362,9 +328,8 @@ class WhatsAppQRAndTextSenderV5:
             WebDriverWait(self.driver, 90).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, "div[id='pane-side']"))
             )
-            self.log("SUCCESS", "WhatsApp Web ready. Starting QR + Caption dispatch loop (v5.0)...")
+            self.log("SUCCESS", "WhatsApp Web ready. Starting Pure-JS UPI Link dispatch loop (v4.1)...")
 
-            qr_abs_path = os.path.abspath(self.qr_path.get())
             min_d = float(self.min_delay.get())
             max_d = float(self.max_delay.get())
             batch_limit = int(self.batch_size.get())
@@ -391,15 +356,15 @@ class WhatsAppQRAndTextSenderV5:
                 hindi_msg = self.generate_complex_hindi_message(row)
 
                 try:
-                    self.log("INFO", f"Dispatching QR + Msg -> {student} (Phone: {phone}, Due: INR {amount})...")
-                    self.send_single_message(phone, hindi_msg, qr_abs_path)
+                    self.log("INFO", f"Dispatching -> {student} (Phone: {phone}, Fixed UPI Due: INR {amount})...")
+                    self.send_single_message(phone, hindi_msg)
 
                     sent_in_session += 1
                     df.at[idx, 'Delivery_Status'] = "SENT"
                     df.at[idx, 'Sent_Timestamp'] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     self.safe_save_excel(df, excel_file)
 
-                    self.log("SUCCESS", f"Delivered QR + Msg to {student} ({phone}) | Count: {sent_in_session}/{len(pending_indices)}")
+                    self.log("SUCCESS", f"Delivered to {student} ({phone}) | Session Count: {sent_in_session}/{len(pending_indices)}")
 
                     if sent_in_session >= len(pending_indices):
                         break
@@ -435,7 +400,7 @@ class WhatsAppQRAndTextSenderV5:
                     self.safe_save_excel(df, excel_file)
                     self.human_pause(4, 7)
 
-            self.log("INFO", f"Batch execution finished. Total QR + messages sent: {sent_in_session}")
+            self.log("INFO", f"Batch execution finished. Total messages sent in this session: {sent_in_session}")
 
         except Exception as e:
             self.log("CRITICAL", f"System Exception: {repr(e)}")
@@ -449,5 +414,5 @@ class WhatsAppQRAndTextSenderV5:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = WhatsAppQRAndTextSenderV5(root)
+    app = PureJSWhatsAppUPISenderV4(root)
     root.mainloop()
